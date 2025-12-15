@@ -277,16 +277,30 @@ class DigprintSeeder extends Seeder
                 ]
             );
 
-            // 10.4 Finishing/Addon: Laminating untuk Kartu Nama (setelah produksi)
+            // 10.4 Proses Produksi: Laminating untuk Kartu Nama (setelah cetak, urutan 2)
+            $produkKartuNamaProses2 = ProdukProses::firstOrCreate(
+                [
+                    'produk_id' => $produkKartuNama->id,
+                    'produk_proses_kategori_id' => $kategoriProduksi->id,
+                    'nama' => 'Laminating',
+                ],
+                [
+                    'urutan' => 2,
+                    'mesin_id' => $mesinLaminating->id,
+                    'apakah_mengurangi_bahan' => false,
+                ]
+            );
+
+            // 10.5 Finishing/Addon: Mata Ayam untuk Kartu Nama (tanpa mesin)
             $produkKartuNamaAddon1 = ProdukProses::firstOrCreate(
                 [
                     'produk_id' => $produkKartuNama->id,
                     'produk_proses_kategori_id' => $kategoriFinishing->id,
-                    'nama' => 'Laminating',
+                    'nama' => 'Mata Ayam',
                 ],
                 [
-                    'harga' => 10000,
-                    'mesin_id' => $mesinLaminating->id,
+                    'harga' => 5000,
+                    'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
                 ]
             );
@@ -369,30 +383,44 @@ class DigprintSeeder extends Seeder
                 ]
             );
 
-            // 11.4 Finishing/Addon: Cutting untuk Undangan (setelah produksi)
-            $produkUndanganAddon1 = ProdukProses::firstOrCreate(
+            // 11.4 Proses Produksi: Cutting untuk Undangan (setelah cetak, urutan 2)
+            $produkUndanganProses2 = ProdukProses::firstOrCreate(
                 [
                     'produk_id' => $produkUndangan->id,
-                    'produk_proses_kategori_id' => $kategoriFinishing->id,
+                    'produk_proses_kategori_id' => $kategoriProduksi->id,
                     'nama' => 'Cutting',
                 ],
                 [
-                    'harga' => 5000,
+                    'urutan' => 2,
                     'mesin_id' => $mesinCutting->id,
                     'apakah_mengurangi_bahan' => false,
                 ]
             );
 
-            // 11.5 Finishing/Addon: Laminating untuk Undangan (setelah produksi)
-            $produkUndanganAddon2 = ProdukProses::firstOrCreate(
+            // 11.5 Proses Produksi: Laminating untuk Undangan (setelah cutting, urutan 3)
+            $produkUndanganProses3 = ProdukProses::firstOrCreate(
                 [
                     'produk_id' => $produkUndangan->id,
-                    'produk_proses_kategori_id' => $kategoriFinishing->id,
+                    'produk_proses_kategori_id' => $kategoriProduksi->id,
                     'nama' => 'Laminating',
                 ],
                 [
-                    'harga' => 10000,
+                    'urutan' => 3,
                     'mesin_id' => $mesinLaminating->id,
+                    'apakah_mengurangi_bahan' => false,
+                ]
+            );
+
+            // 11.6 Finishing/Addon: Stand Banner untuk Undangan (tanpa mesin)
+            $produkUndanganAddon1 = ProdukProses::firstOrCreate(
+                [
+                    'produk_id' => $produkUndangan->id,
+                    'produk_proses_kategori_id' => $kategoriFinishing->id,
+                    'nama' => 'Stand Banner',
+                ],
+                [
+                    'harga' => 15000,
+                    'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
                 ]
             );
@@ -436,7 +464,7 @@ class DigprintSeeder extends Seeder
                 ]
             );
 
-            // 12.3 Finishing/Addon: Staples untuk Brosur (setelah produksi)
+            // 12.3 Finishing/Addon: Staples untuk Brosur (tanpa mesin)
             $produkBrosurAddon1 = ProdukProses::firstOrCreate(
                 [
                     'produk_id' => $produkBrosur->id,
@@ -445,7 +473,7 @@ class DigprintSeeder extends Seeder
                 ],
                 [
                     'harga' => 3000,
-                    'mesin_id' => null, // Manual
+                    'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
                 ]
             );
@@ -700,9 +728,9 @@ class DigprintSeeder extends Seeder
             $this->command->info('- 3 Customer');
             $this->command->info('- 1 Supplier');
             $this->command->info('- 4 Bahan');
-            $this->command->info('- 2 Proses Kategori');
+            $this->command->info('- 3 Proses Kategori');
             $this->command->info('- 4 Mesin');
-            $this->command->info('- 5 Proses');
+            $this->command->info('- 8+ Proses (Design, Produksi dengan mesin, Finishing tanpa mesin)');
             $this->command->info('- 4 Produk');
             $this->command->info('- 3 Transaksi Kalkulasi (siap untuk testing menu kasir)');
             $this->command->info('- 2 Operator Users dengan mesin assignment');
