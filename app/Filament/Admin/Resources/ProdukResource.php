@@ -463,59 +463,92 @@ class ProdukResource extends Resource
                     ]),
                     Forms\Components\Wizard\Step::make('Harga')
                         ->icon('heroicon-o-currency-dollar')
-                        ->schema([
-                            Forms\Components\Repeater::make('produkHargas')
-                                ->label('Set Harga')
-                                ->required()
-                                ->addable(false)
-                                ->deletable(false)
-                                ->relationship('produkHargas')
-                            ->defaultItems(CustomerKategori::query()->count())
-                            ->default(function () {
-                                $customerKategoris = CustomerKategori::all();
-                                return $customerKategoris->map(function ($kategori) {
-                                    return [
-                                        'customer_kategori_id' => $kategori->id,
-                                    ];
-                                })->toArray();
-                            })
-                            ->schema([
-                                Forms\Components\Hidden::make('customer_kategori_id')
-                                    ->required(),
-                                Forms\Components\TextInput::make('customer_kategori_nama')
-                                    ->label('Kategori Pelanggan')
-                                    ->disabled()
-                                    ->dehydrated(false)
-                                    ->afterStateHydrated(function (Forms\Components\TextInput $component, $state, $record, $get) {
-                                        if ($record && $record->customerKategori) {
-                                            $component->state($record->customerKategori->nama);
-                                        } else {
-                                            $kategoriId = $get('customer_kategori_id');
-                                            if ($kategoriId) {
-                                                $kategori = CustomerKategori::find($kategoriId);
-                                                if ($kategori) {
-                                                    $component->state($kategori->nama);
-                                                }
-                                            }
-                                        }
-                                    }),
-                                Forms\Components\TextInput::make('harga')
-                                    ->label('Harga')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('Rp')
-                                    ->minValue(0)
-                                    ->default(0)
-                                    ->mask(RawJs::make('$money($input)'))
-                                    ->stripCharacters(','),
-                            ])
-                            ->columns(3)
-                            ->itemLabel(fn (array $state): ?string => 
-                                isset($state['customer_kategori_id']) 
-                                    ? CustomerKategori::find($state['customer_kategori_id'])?->nama 
-                                    : null
-                            ),
-                        ]),
+                        ->schema(function ($record) {
+                            $customerKategoris = CustomerKategori::all();
+                            $sections = [];
+                            
+                            foreach ($customerKategoris as $kategori) {
+                                $kategoriId = $kategori->id;
+                                $sections[] = Forms\Components\Section::make($kategori->nama)
+                                    ->description('Set harga tiering untuk kategori ' . $kategori->nama)
+                                    ->schema([
+                                        Forms\Components\Repeater::make("hargaKategori_{$kategoriId}")
+                                            ->label('Tiering Harga')
+                                            ->relationship(
+                                                'produkHargas',
+                                                modifyQueryUsing: fn ($query) => $query->where('customer_kategori_id', $kategoriId)
+                                            )
+                                            ->defaultItems(1)
+                                            ->minItems(1)
+                                            ->reorderable(false)
+                                            ->schema([
+                                                Forms\Components\Hidden::make('customer_kategori_id')
+                                                    ->default($kategoriId)
+                                                    ->required()
+                                                    ->dehydrated(),
+                                                Forms\Components\TextInput::make('jumlah_pesanan_minimal')
+                                                    ->label('Jumlah Pesanan Minimal')
+                                                    ->numeric()
+                                                    ->required()
+                                                    ->minValue(1)
+                                                    ->default(1)
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                                        // Validasi: minimal harus <= maksimal
+                                                        $maksimal = $get('jumlah_pesanan_maksimal');
+                                                        if ($maksimal && $state > $maksimal) {
+                                                            $set('jumlah_pesanan_maksimal', $state);
+                                                        }
+                                                    })
+                                                    ->columnSpan(1),
+                                                Forms\Components\TextInput::make('jumlah_pesanan_maksimal')
+                                                    ->label('Jumlah Pesanan Maksimal')
+                                                    ->numeric()
+                                                    ->required()
+                                                    ->minValue(1)
+                                                    ->default(1)
+                                                    ->live(onBlur: true)
+                                                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                                        // Validasi: maksimal harus >= minimal
+                                                        $minimal = $get('jumlah_pesanan_minimal');
+                                                        if ($minimal && $state < $minimal) {
+                                                            $set('jumlah_pesanan_minimal', $state);
+                                                        }
+                                                    })
+                                                    ->columnSpan(1),
+                                                Forms\Components\TextInput::make('harga')
+                                                    ->label('Harga')
+                                                    ->required()
+                                                    ->numeric()
+                                                    ->prefix('Rp')
+                                                    ->minValue(0)
+                                                    ->default(0)
+                                                    ->mask(RawJs::make('$money($input)'))
+                                                    ->stripCharacters([',', '.'])
+                                                    ->columnSpan(1),
+                                            ])
+                                            ->columns(3)
+                                            ->itemLabel(fn (array $state): ?string => 
+                                                isset($state['jumlah_pesanan_minimal']) && isset($state['jumlah_pesanan_maksimal'])
+                                                    ? "{$state['jumlah_pesanan_minimal']} - {$state['jumlah_pesanan_maksimal']} pcs"
+                                                    : 'Tier Baru'
+                                            )
+                                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data) use ($kategoriId) {
+                                                $data['customer_kategori_id'] = $kategoriId;
+                                                return $data;
+                                            })
+                                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data) use ($kategoriId) {
+                                                $data['customer_kategori_id'] = $kategoriId;
+                                                return $data;
+                                            }),
+                                    ])
+                                    ->collapsible()
+                                    ->collapsed(false);
+                            }
+                            
+                            return $sections;
+                        })
+                        ->columnSpanFull(),
                 ])
                 ->skippable(fn(string $operation) => $operation === 'edit')
                 ->submitAction(Forms\Components\Actions\Action::make('submit')
@@ -534,14 +567,27 @@ class ProdukResource extends Resource
         $priceColumns = $customerKategoris->map(function ($kategori) {
             return Tables\Columns\TextColumn::make("harga_{$kategori->id}")
                 ->label($kategori->nama)
-                ->money('IDR')
                 ->getStateUsing(function (Produk $record) use ($kategori) {
                     // Use eager loaded relationship to avoid N+1 queries
-                    $produkHarga = $record->produkHargas
+                    $produkHargas = $record->produkHargas
                         ->where('customer_kategori_id', $kategori->id)
-                        ->first();
-                    return $produkHarga?->harga ?? 0;
+                        ->sortBy('jumlah_pesanan_minimal');
+                    
+                    if ($produkHargas->isEmpty()) {
+                        return '-';
+                    }
+                    
+                    // Tampilkan informasi tiering
+                    $tiers = $produkHargas->map(function ($harga) {
+                        $min = number_format($harga->jumlah_pesanan_minimal, 0, ',', '.');
+                        $max = $harga->jumlah_pesanan_maksimal ? number_format($harga->jumlah_pesanan_maksimal, 0, ',', '.') : '∞';
+                        $hargaFormatted = 'Rp ' . number_format($harga->harga, 0, ',', '.');
+                        return "{$min}-{$max}: {$hargaFormatted}";
+                    })->implode('<br>');
+                    
+                    return new \Illuminate\Support\HtmlString($tiers);
                 })
+                ->html()
                 ->sortable(false)
                 ->searchable(false);
         })->toArray();

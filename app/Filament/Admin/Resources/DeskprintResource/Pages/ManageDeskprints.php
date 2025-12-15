@@ -59,16 +59,19 @@ class ManageDeskprints extends ManageRecords
         }
 
         foreach ($record->transaksiKalkulasiProduks as $produk) {
-            // Ambil harga satuan berdasarkan kategori customer
-            $produkHarga = ProdukHarga::where('produk_id', $produk->produk_id)
-                ->where('customer_kategori_id', $customer->customer_kategori_id)
-                ->first();
-
-            $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-
-            // Parse nilai
-            $jumlah = (float) ($produk->jumlah ?? 1);
+            // Parse jumlah untuk menentukan tier
+            $jumlah = (int) ($produk->jumlah ?? 1);
             if ($jumlah <= 0) $jumlah = 1;
+            
+            // Ambil harga satuan berdasarkan tiering
+            $hargaSatuan = DeskprintResource::getHargaSatuanByTiering(
+                $produk->produk_id,
+                $customer->customer_kategori_id,
+                $jumlah
+            );
+
+            // Konversi ke float untuk perhitungan
+            $jumlahFloat = (float) $jumlah;
 
             $panjang = $produk->panjang ? (float) $produk->panjang : 1.0;
             if ($panjang <= 0) $panjang = 1.0;
@@ -77,7 +80,7 @@ class ManageDeskprints extends ManageRecords
             if ($lebar <= 0) $lebar = 1.0;
 
             // Hitung total produk
-            $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
+            $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
 
             // Tambah harga design (single value, bukan array)
             if ($produk->design_id) {
@@ -127,21 +130,24 @@ class ManageDeskprints extends ManageRecords
         foreach ($produks as $produk) {
             if (!isset($produk['produk_id'])) continue;
 
-            // Ambil harga satuan berdasarkan kategori customer
-            $produkHarga = ProdukHarga::where('produk_id', $produk['produk_id'])
-                ->where('customer_kategori_id', $customer->customer_kategori_id)
-                ->first();
-
-            $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-
-            // Parse jumlah
+            // Parse jumlah untuk menentukan tier
             $jumlahRaw = $produk['jumlah'] ?? 1;
             if (is_string($jumlahRaw)) {
-                $jumlah = (float) str_replace([',', ' ', '.'], '', $jumlahRaw);
+                $jumlah = (int) str_replace([',', ' ', '.'], '', $jumlahRaw);
             } else {
-                $jumlah = (float) $jumlahRaw;
+                $jumlah = (int) $jumlahRaw;
             }
             if ($jumlah <= 0) $jumlah = 1;
+            
+            // Ambil harga satuan berdasarkan tiering
+            $hargaSatuan = DeskprintResource::getHargaSatuanByTiering(
+                $produk['produk_id'],
+                $customer->customer_kategori_id,
+                $jumlah
+            );
+            
+            // Konversi ke float untuk perhitungan
+            $jumlahFloat = (float) $jumlah;
 
             // Parse panjang
             $panjangRaw = $produk['panjang'] ?? null;
@@ -170,7 +176,7 @@ class ManageDeskprints extends ManageRecords
             }
 
             // Hitung total produk
-            $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
+            $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
 
             // Tambah harga design (single value, bukan array)
             if (isset($produk['design_id']) && !empty($produk['design_id']) && $produk['design_id'] !== 'none') {

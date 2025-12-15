@@ -42,6 +42,30 @@ class DeskprintResource extends Resource
                             Forms\Components\Repeater::make('produks')
                                 ->label('Produk')
                                 ->relationship('transaksiKalkulasiProduks')
+                                ->live()
+                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                    // Hitung ulang total_harga_produk untuk setiap item saat ada perubahan
+                                    if (!is_array($state)) {
+                                        return;
+                                    }
+                                    
+                                    $customerId = $get('../../customer_id') ?? $get('customer_id');
+                                    if (!$customerId) {
+                                        return;
+                                    }
+                                    
+                                    foreach ($state as $index => $produk) {
+                                        if (!isset($produk['produk_id'])) {
+                                            continue;
+                                        }
+                                        
+                                        // Hitung total_harga_produk menggunakan calculateTotalHargaProduk
+                                        $calculatedData = static::calculateTotalHargaProduk($produk, $customerId);
+                                        if (isset($calculatedData['total_harga_produk'])) {
+                                            $set("produks.{$index}.total_harga_produk", $calculatedData['total_harga_produk']);
+                                        }
+                                    }
+                                })
                                 ->schema([
                                     Forms\Components\Grid::make(2)
                                         ->schema([
@@ -61,27 +85,113 @@ class DeskprintResource extends Resource
                                                         // Trigger update pada design field
                                                     }
                                                 })
-                                                ->afterStateUpdated(function (Forms\Set $set) {
+                                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                                     // Reset design dan addon ketika produk berubah
                                                     $set('design_id', null);
                                                     $set('addons', []);
+                                                    
+                                                    // Hitung ulang total_harga_produk saat produk berubah
+                                                    $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                                    if (!$customerId) {
+                                                        return;
+                                                    }
+                                                    
+                                                    $produkData = [
+                                                        'produk_id' => $get('produk_id'),
+                                                        'jumlah' => $get('jumlah'),
+                                                        'panjang' => $get('panjang'),
+                                                        'lebar' => $get('lebar'),
+                                                        'design_id' => null,
+                                                        'addons' => [],
+                                                    ];
+                                                    
+                                                    $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                                    if (isset($calculatedData['total_harga_produk'])) {
+                                                        $set('total_harga_produk', $calculatedData['total_harga_produk']);
+                                                    }
                                                 }),
                                             Forms\Components\TextInput::make('jumlah')
                                                 ->label('Jumlah')
                                                 ->required()
                                                 ->numeric()
-                                                ->minValue(1),
+                                                ->minValue(1)
+                                                ->live(onBlur: true)
+                                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                                    // Hitung ulang total_harga_produk saat jumlah berubah
+                                                    $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                                    if (!$customerId) {
+                                                        return;
+                                                    }
+                                                    
+                                                    $produkData = [
+                                                        'produk_id' => $get('produk_id'),
+                                                        'jumlah' => $get('jumlah'),
+                                                        'panjang' => $get('panjang'),
+                                                        'lebar' => $get('lebar'),
+                                                        'design_id' => $get('design_id'),
+                                                        'addons' => $get('addons'),
+                                                    ];
+                                                    
+                                                    $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                                    if (isset($calculatedData['total_harga_produk'])) {
+                                                        $set('total_harga_produk', $calculatedData['total_harga_produk']);
+                                                    }
+                                                }),
                                             Forms\Components\TextInput::make('panjang')
                                                 ->label('Panjang')
                                                 ->required()
                                                 ->numeric()
                                                 ->minValue(1)
+                                                ->live(onBlur: true)
+                                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                                    // Hitung ulang total_harga_produk saat panjang berubah
+                                                    $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                                    if (!$customerId) {
+                                                        return;
+                                                    }
+                                                    
+                                                    $produkData = [
+                                                        'produk_id' => $get('produk_id'),
+                                                        'jumlah' => $get('jumlah'),
+                                                        'panjang' => $get('panjang'),
+                                                        'lebar' => $get('lebar'),
+                                                        'design_id' => $get('design_id'),
+                                                        'addons' => $get('addons'),
+                                                    ];
+                                                    
+                                                    $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                                    if (isset($calculatedData['total_harga_produk'])) {
+                                                        $set('total_harga_produk', $calculatedData['total_harga_produk']);
+                                                    }
+                                                })
                                                 ->visible(fn (Forms\Get $get) => $get('produk_id') ? Produk::find($get('produk_id'))?->apakah_perlu_custom_dimensi : false),
                                             Forms\Components\TextInput::make('lebar')
                                                 ->label('Lebar')
                                                 ->required()
                                                 ->numeric()
                                                 ->minValue(1)
+                                                ->live(onBlur: true)
+                                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                                                    // Hitung ulang total_harga_produk saat lebar berubah
+                                                    $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                                    if (!$customerId) {
+                                                        return;
+                                                    }
+                                                    
+                                                    $produkData = [
+                                                        'produk_id' => $get('produk_id'),
+                                                        'jumlah' => $get('jumlah'),
+                                                        'panjang' => $get('panjang'),
+                                                        'lebar' => $get('lebar'),
+                                                        'design_id' => $get('design_id'),
+                                                        'addons' => $get('addons'),
+                                                    ];
+                                                    
+                                                    $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                                    if (isset($calculatedData['total_harga_produk'])) {
+                                                        $set('total_harga_produk', $calculatedData['total_harga_produk']);
+                                                    }
+                                                })
                                                 ->visible(fn (Forms\Get $get) => $get('produk_id') ? Produk::find($get('produk_id'))?->apakah_perlu_custom_dimensi : false),
                                         ]),
                                     Forms\Components\Hidden::make('total_harga_produk')
@@ -115,9 +225,29 @@ class DeskprintResource extends Resource
                                                 $set('design_id', 'none');
                                             }
                                         })
-                                        ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
                                             if ($state === 'none') {
                                                 $set('design_id', null);
+                                            }
+                                            
+                                            // Hitung ulang total_harga_produk saat design berubah
+                                            $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                            if (!$customerId) {
+                                                return;
+                                            }
+                                            
+                                            $produkData = [
+                                                'produk_id' => $get('produk_id'),
+                                                'jumlah' => $get('jumlah'),
+                                                'panjang' => $get('panjang'),
+                                                'lebar' => $get('lebar'),
+                                                'design_id' => $state === 'none' ? null : $state,
+                                                'addons' => $get('addons'),
+                                            ];
+                                            
+                                            $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                            if (isset($calculatedData['total_harga_produk'])) {
+                                                $set('total_harga_produk', $calculatedData['total_harga_produk']);
                                             }
                                         })
                                         ->dehydrated(fn ($state) => $state !== 'none' && $state !== null)
@@ -178,6 +308,27 @@ class DeskprintResource extends Resource
                                         ->searchable()
                                         ->columns(1)
                                         ->live()
+                                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                            // Hitung ulang total_harga_produk saat addons berubah
+                                            $customerId = $get('../../../../customer_id') ?? $get('../../customer_id');
+                                            if (!$customerId) {
+                                                return;
+                                            }
+                                            
+                                            $produkData = [
+                                                'produk_id' => $get('produk_id'),
+                                                'jumlah' => $get('jumlah'),
+                                                'panjang' => $get('panjang'),
+                                                'lebar' => $get('lebar'),
+                                                'design_id' => $get('design_id'),
+                                                'addons' => $state,
+                                            ];
+                                            
+                                            $calculatedData = static::calculateTotalHargaProduk($produkData, $customerId);
+                                            if (isset($calculatedData['total_harga_produk'])) {
+                                                $set('total_harga_produk', $calculatedData['total_harga_produk']);
+                                            }
+                                        })
                                         ->visible(fn (Forms\Get $get) => !empty($get('produk_id')))
                                         ->helperText(function (Forms\Get $get) {
                                             $produkId = $get('produk_id');
@@ -263,6 +414,38 @@ class DeskprintResource extends Resource
                                 }))
                                 ->searchable(['customerKategori.kode', 'nama', 'no_hp1', 'no_hp2'])
                                 ->required()
+                                ->live()
+                                ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                                    // Hitung ulang total_harga_produk untuk semua produk saat customer berubah
+                                    if (!$state) {
+                                        return;
+                                    }
+                                    
+                                    $produks = $get('produks');
+                                    if (!is_array($produks)) {
+                                        return;
+                                    }
+                                    
+                                    foreach ($produks as $index => $produk) {
+                                        if (!isset($produk['produk_id'])) {
+                                            continue;
+                                        }
+                                        
+                                        $produkData = [
+                                            'produk_id' => $produk['produk_id'],
+                                            'jumlah' => $produk['jumlah'] ?? 1,
+                                            'panjang' => $produk['panjang'] ?? null,
+                                            'lebar' => $produk['lebar'] ?? null,
+                                            'design_id' => $produk['design_id'] ?? null,
+                                            'addons' => $produk['addons'] ?? null,
+                                        ];
+                                        
+                                        $calculatedData = static::calculateTotalHargaProduk($produkData, $state);
+                                        if (isset($calculatedData['total_harga_produk'])) {
+                                            $set("produks.{$index}.total_harga_produk", $calculatedData['total_harga_produk']);
+                                        }
+                                    }
+                                })
                                 ->createOptionForm([
                                     Forms\Components\Select::make('customer_kategori_id')
                                         ->label('Kategori Pelanggan')
@@ -348,6 +531,20 @@ class DeskprintResource extends Resource
                                                 return 'Customer tidak ditemukan';
                                             }
                                             
+                                            // Pastikan total_harga_produk sudah dihitung untuk setiap produk
+                                            // Gunakan logika yang sama dengan calculateTotalHargaProduk
+                                            foreach ($produks as $index => $produk) {
+                                                if (!isset($produk['produk_id']) || isset($produk['total_harga_produk'])) {
+                                                    continue;
+                                                }
+                                                
+                                                // Hitung total_harga_produk jika belum ada
+                                                $calculatedData = static::calculateTotalHargaProduk($produk, $customerId);
+                                                if (isset($calculatedData['total_harga_produk'])) {
+                                                    $produks[$index]['total_harga_produk'] = $calculatedData['total_harga_produk'];
+                                                }
+                                            }
+                                            
                                             $html = '<div style="font-family: sans-serif;">';
                                             $totalKeseluruhan = 0;
                                             $produkCounter = 0; // Counter untuk numbering produk yang benar
@@ -360,60 +557,118 @@ class DeskprintResource extends Resource
                                                 
                                                 $produkCounter++; // Increment counter untuk setiap produk valid
                                                 
-                                                // Ambil harga satuan berdasarkan kategori customer
-                                                $produkHarga = ProdukHarga::where('produk_id', $produk['produk_id'])
-                                                    ->where('customer_kategori_id', $customer->customer_kategori_id)
-                                                    ->first();
+                                                // Gunakan total_harga_produk yang sudah dihitung jika ada, jika tidak hitung ulang
+                                                $totalProdukFromState = isset($produk['total_harga_produk']) ? (float) $produk['total_harga_produk'] : null;
                                                 
-                                                $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-                                                
-                                                // Parse jumlah - handle string dengan format atau numeric
-                                                $jumlahRaw = $produk['jumlah'] ?? 1;
-                                                if (is_string($jumlahRaw)) {
-                                                    $jumlah = (float) str_replace([',', ' ', '.'], '', $jumlahRaw);
-                                                } else {
-                                                    $jumlah = (float) $jumlahRaw;
-                                                }
-                                                if ($jumlah <= 0) $jumlah = 1;
-                                                
-                                                // Parse panjang - handle nullable, TETAPKAN DECIMAL (jangan hilangkan titik)
-                                                $panjangRaw = $produk['panjang'] ?? null;
-                                                if ($panjangRaw === null || $panjangRaw === '') {
-                                                    $panjang = 1.0;
-                                                } else {
-                                                    if (is_string($panjangRaw)) {
-                                                        // Hanya hilangkan koma dan spasi, JANGAN hilangkan titik (decimal separator)
-                                                        $panjang = (float) str_replace([',', ' '], '', $panjangRaw);
+                                                // Jika total_harga_produk belum ada, hitung menggunakan logika yang sama dengan calculateTotalHargaProduk
+                                                if ($totalProdukFromState === null || $totalProdukFromState === 0) {
+                                                    // Parse jumlah untuk menentukan tier
+                                                    $jumlahRaw = $produk['jumlah'] ?? 1;
+                                                    if (is_string($jumlahRaw)) {
+                                                        $jumlah = (int) str_replace([',', ' ', '.'], '', $jumlahRaw);
                                                     } else {
-                                                        $panjang = (float) $panjangRaw;
+                                                        $jumlah = (int) $jumlahRaw;
                                                     }
-                                                    if ($panjang <= 0) $panjang = 1.0;
-                                                }
-                                                
-                                                // Parse lebar - handle nullable, TETAPKAN DECIMAL (jangan hilangkan titik)
-                                                $lebarRaw = $produk['lebar'] ?? null;
-                                                if ($lebarRaw === null || $lebarRaw === '') {
-                                                    $lebar = 1.0;
-                                                } else {
-                                                    if (is_string($lebarRaw)) {
-                                                        // Hanya hilangkan koma dan spasi, JANGAN hilangkan titik (decimal separator)
-                                                        $lebar = (float) str_replace([',', ' '], '', $lebarRaw);
+                                                    if ($jumlah <= 0) $jumlah = 1;
+                                                    
+                                                    // Ambil harga satuan berdasarkan tiering
+                                                    $hargaSatuan = static::getHargaSatuanByTiering(
+                                                        $produk['produk_id'],
+                                                        $customer->customer_kategori_id,
+                                                        $jumlah
+                                                    );
+                                                    
+                                                    // Konversi ke float untuk perhitungan
+                                                    $jumlahFloat = (float) $jumlah;
+                                                    
+                                                    // Parse panjang - handle nullable, TETAPKAN DECIMAL (jangan hilangkan titik)
+                                                    $panjangRaw = $produk['panjang'] ?? null;
+                                                    if ($panjangRaw === null || $panjangRaw === '') {
+                                                        $panjang = 1.0;
                                                     } else {
-                                                        $lebar = (float) $lebarRaw;
+                                                        if (is_string($panjangRaw)) {
+                                                            // Hanya hilangkan koma dan spasi, JANGAN hilangkan titik (decimal separator)
+                                                            $panjang = (float) str_replace([',', ' '], '', $panjangRaw);
+                                                        } else {
+                                                            $panjang = (float) $panjangRaw;
+                                                        }
+                                                        if ($panjang <= 0) $panjang = 1.0;
                                                     }
-                                                    if ($lebar <= 0) $lebar = 1.0;
+                                                    
+                                                    // Parse lebar - handle nullable, TETAPKAN DECIMAL (jangan hilangkan titik)
+                                                    $lebarRaw = $produk['lebar'] ?? null;
+                                                    if ($lebarRaw === null || $lebarRaw === '') {
+                                                        $lebar = 1.0;
+                                                    } else {
+                                                        if (is_string($lebarRaw)) {
+                                                            // Hanya hilangkan koma dan spasi, JANGAN hilangkan titik (decimal separator)
+                                                            $lebar = (float) str_replace([',', ' '], '', $lebarRaw);
+                                                        } else {
+                                                            $lebar = (float) $lebarRaw;
+                                                        }
+                                                        if ($lebar <= 0) $lebar = 1.0;
+                                                    }
+                                                    
+                                                    // HITUNG TOTAL PRODUK (tanpa design dan addon, karena akan ditambahkan terpisah)
+                                                    // Formula: Harga Satuan × Jumlah × Panjang × Lebar
+                                                    $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
+                                                } else {
+                                                    // Gunakan total_harga_produk yang sudah dihitung
+                                                    // Tapi perlu dikurangi design dan addon karena total_harga_produk sudah termasuk semuanya
+                                                    // Untuk tampilan, kita perlu breakdown, jadi hitung ulang bagian produk saja
+                                                    // Parse jumlah untuk menentukan tier
+                                                    $jumlahRaw = $produk['jumlah'] ?? 1;
+                                                    if (is_string($jumlahRaw)) {
+                                                        $jumlah = (int) str_replace([',', ' ', '.'], '', $jumlahRaw);
+                                                    } else {
+                                                        $jumlah = (int) $jumlahRaw;
+                                                    }
+                                                    if ($jumlah <= 0) $jumlah = 1;
+                                                    
+                                                    // Ambil harga satuan berdasarkan tiering
+                                                    $hargaSatuan = static::getHargaSatuanByTiering(
+                                                        $produk['produk_id'],
+                                                        $customer->customer_kategori_id,
+                                                        $jumlah
+                                                    );
+                                                    
+                                                    // Konversi ke float untuk perhitungan
+                                                    $jumlahFloat = (float) $jumlah;
+                                                    
+                                                    // Parse panjang dan lebar untuk display
+                                                    $panjangRaw = $produk['panjang'] ?? null;
+                                                    if ($panjangRaw === null || $panjangRaw === '') {
+                                                        $panjang = 1.0;
+                                                    } else {
+                                                        if (is_string($panjangRaw)) {
+                                                            $panjang = (float) str_replace([',', ' '], '', $panjangRaw);
+                                                        } else {
+                                                            $panjang = (float) $panjangRaw;
+                                                        }
+                                                        if ($panjang <= 0) $panjang = 1.0;
+                                                    }
+                                                    
+                                                    $lebarRaw = $produk['lebar'] ?? null;
+                                                    if ($lebarRaw === null || $lebarRaw === '') {
+                                                        $lebar = 1.0;
+                                                    } else {
+                                                        if (is_string($lebarRaw)) {
+                                                            $lebar = (float) str_replace([',', ' '], '', $lebarRaw);
+                                                        } else {
+                                                            $lebar = (float) $lebarRaw;
+                                                        }
+                                                        if ($lebar <= 0) $lebar = 1.0;
+                                                    }
+                                                    
+                                                    // Hitung subtotal produk (tanpa design dan addon)
+                                                    $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
                                                 }
-                                                
-                                                // HITUNG TOTAL PRODUK
-                                                // Formula: Harga Satuan × Jumlah × Panjang × Lebar
-                                                // Jika tidak ada dimensi custom (panjang/lebar null), maka panjang = 1 dan lebar = 1
-                                                $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
                                                 
                                                 $html .= '<div style="border: 1px solid #e5e7eb; padding: 16px; margin-bottom: 16px; border-radius: 8px;">';
                                                 $html .= '<h4 style="margin: 0 0 12px 0; color: #374151;">Produk #' . $produkCounter . ': [' . $produkModel->kode . '] - ' . $produkModel->nama . '</h4>';
                                                 $html .= '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">';
                                                 $html .= '<div><strong>Harga Satuan:</strong> ' . formatRupiah($hargaSatuan) . '</div>';
-                                                $html .= '<div><strong>Jumlah:</strong> ' . $jumlah . '</div>';
+                                                $html .= '<div><strong>Jumlah:</strong> ' . $jumlahFloat . '</div>';
                                                 
                                                 if (isset($produk['panjang']) && isset($produk['lebar'])) {
                                                     // Tampilkan dimensi dengan decimal jika ada (format: hapus trailing zero)
@@ -428,7 +683,7 @@ class DeskprintResource extends Resource
                                                 // Tampilkan breakdown dengan decimal yang benar
                                                 $panjangDisplay = rtrim(rtrim(number_format($panjang, 2, '.', ''), '0'), '.');
                                                 $lebarDisplay = rtrim(rtrim(number_format($lebar, 2, '.', ''), '0'), '.');
-                                                $html .= '<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">(' . formatRupiah($hargaSatuan) . ' × ' . $jumlah . ' × ' . $panjangDisplay . ' × ' . $lebarDisplay . ')</div>';
+                                                $html .= '<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">(' . formatRupiah($hargaSatuan) . ' × ' . $jumlahFloat . ' × ' . $panjangDisplay . ' × ' . $lebarDisplay . ')</div>';
                                                 $html .= '</div>';
                                                 
                                                 // Hitung dan tampilkan design
@@ -469,8 +724,13 @@ class DeskprintResource extends Resource
                                                 }
                                                 
                                                 // HITUNG TOTAL PRODUK FINAL
-                                                // Formula: Subtotal Produk + Design + Total Addon
-                                                $totalProdukFinal = $totalProduk + $totalDesign + $totalAddon;
+                                                // Jika total_harga_produk sudah ada dari state, gunakan itu (sudah termasuk design dan addon)
+                                                // Jika tidak, hitung: Subtotal Produk + Design + Total Addon
+                                                if ($totalProdukFromState !== null && $totalProdukFromState > 0) {
+                                                    $totalProdukFinal = $totalProdukFromState;
+                                                } else {
+                                                    $totalProdukFinal = $totalProduk + $totalDesign + $totalAddon;
+                                                }
                                                 
                                                 $html .= '<div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #3b82f6; font-weight: bold; color: #1d4ed8;">';
                                                 $html .= 'Total Produk #' . $produkCounter . ': ' . formatRupiah($totalProdukFinal);
@@ -512,21 +772,24 @@ class DeskprintResource extends Resource
                                     foreach ($produks as $index => $produk) {
                                         if (!isset($produk['produk_id'])) continue;
                                         
-                                        // Ambil harga satuan berdasarkan kategori customer
-                                        $produkHarga = ProdukHarga::where('produk_id', $produk['produk_id'])
-                                            ->where('customer_kategori_id', $customer->customer_kategori_id)
-                                            ->first();
-                                        
-                                        $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-                                        
-                                        // Parse jumlah - handle string dengan format atau numeric
+                                        // Parse jumlah untuk menentukan tier
                                         $jumlahRaw = $produk['jumlah'] ?? 1;
                                         if (is_string($jumlahRaw)) {
-                                            $jumlah = (float) str_replace([',', ' ', '.'], '', $jumlahRaw);
+                                            $jumlah = (int) str_replace([',', ' ', '.'], '', $jumlahRaw);
                                         } else {
-                                            $jumlah = (float) $jumlahRaw;
+                                            $jumlah = (int) $jumlahRaw;
                                         }
                                         if ($jumlah <= 0) $jumlah = 1;
+                                        
+                                        // Ambil harga satuan berdasarkan tiering
+                                        $hargaSatuan = static::getHargaSatuanByTiering(
+                                            $produk['produk_id'],
+                                            $customer->customer_kategori_id,
+                                            $jumlah
+                                        );
+                                        
+                                        // Konversi ke float untuk perhitungan
+                                        $jumlahFloat = (float) $jumlah;
                                         
                                         // Parse panjang - handle nullable, TETAPKAN DECIMAL (jangan hilangkan titik)
                                         $panjangRaw = $produk['panjang'] ?? null;
@@ -557,7 +820,7 @@ class DeskprintResource extends Resource
                                         }
                                         
                                         // Hitung total produk
-                                        $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
+                                        $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
                                         
                                         // Tambah harga design (single value)
                                         if (isset($produk['design_id']) && !empty($produk['design_id'])) {
@@ -600,6 +863,51 @@ class DeskprintResource extends Resource
             ]);
     }
 
+    /**
+     * Helper function untuk mendapatkan harga berdasarkan tiering
+     * 
+     * @param int $produkId
+     * @param int $customerKategoriId
+     * @param int $jumlahPesanan
+     * @return float
+     */
+    public static function getHargaSatuanByTiering(int $produkId, int $customerKategoriId, int $jumlahPesanan): float
+    {
+        // Ambil semua tier harga untuk produk dan kategori customer
+        $produkHargas = ProdukHarga::where('produk_id', $produkId)
+            ->where('customer_kategori_id', $customerKategoriId)
+            ->orderBy('jumlah_pesanan_minimal', 'asc')
+            ->get();
+        
+        if ($produkHargas->isEmpty()) {
+            return 0.0;
+        }
+        
+        // Cari tier yang sesuai dengan jumlah pesanan
+        foreach ($produkHargas as $produkHarga) {
+            if ($jumlahPesanan >= $produkHarga->jumlah_pesanan_minimal && 
+                $jumlahPesanan <= $produkHarga->jumlah_pesanan_maksimal) {
+                return (float) $produkHarga->harga;
+            }
+        }
+        
+        // Jika tidak ada tier yang sesuai, ambil tier terdekat (yang jumlah_pesanan_minimal terdekat)
+        // Atau bisa juga ambil tier terakhir jika jumlah pesanan melebihi semua tier
+        $lastTier = $produkHargas->last();
+        if ($jumlahPesanan > $lastTier->jumlah_pesanan_maksimal) {
+            return (float) $lastTier->harga;
+        }
+        
+        // Jika jumlah pesanan kurang dari tier pertama, gunakan tier pertama
+        $firstTier = $produkHargas->first();
+        if ($jumlahPesanan < $firstTier->jumlah_pesanan_minimal) {
+            return (float) $firstTier->harga;
+        }
+        
+        // Fallback: return 0
+        return 0.0;
+    }
+
     protected static function calculateTotalHargaProduk(array $data, $customerId = null): array
     {
         // Jika customer_id tidak diberikan, coba ambil dari record jika ada
@@ -621,21 +929,25 @@ class DeskprintResource extends Resource
             return $data;
         }
         
-        // Ambil harga satuan berdasarkan kategori customer
-        $produkHarga = ProdukHarga::where('produk_id', $data['produk_id'])
-            ->where('customer_kategori_id', $customer->customer_kategori_id)
-            ->first();
-        
-        $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-        
-        // Parse jumlah
+        // Parse jumlah untuk menentukan tier
         $jumlahRaw = $data['jumlah'] ?? 1;
         if (is_string($jumlahRaw)) {
-            $jumlah = (float) str_replace([',', ' ', '.'], '', $jumlahRaw);
+            $jumlah = (int) str_replace([',', ' ', '.'], '', $jumlahRaw);
         } else {
-            $jumlah = (float) $jumlahRaw;
+            $jumlah = (int) $jumlahRaw;
         }
         if ($jumlah <= 0) $jumlah = 1;
+        
+        // Ambil harga satuan berdasarkan tiering
+        $hargaSatuan = static::getHargaSatuanByTiering(
+            $data['produk_id'],
+            $customer->customer_kategori_id,
+            $jumlah
+        );
+        
+        // Parse jumlah (sudah di-parse di atas untuk tiering)
+        // Konversi ke float untuk perhitungan
+        $jumlahFloat = (float) $jumlah;
         
         // Parse panjang - TETAPKAN DECIMAL
         $panjangRaw = $data['panjang'] ?? null;
@@ -664,7 +976,7 @@ class DeskprintResource extends Resource
         }
         
         // Hitung total produk
-        $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
+        $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
         
         // Tambah harga design (single value, bukan array)
         if (isset($data['design_id']) && !empty($data['design_id'])) {
@@ -710,16 +1022,19 @@ class DeskprintResource extends Resource
         }
 
         foreach ($record->transaksiKalkulasiProduks as $produk) {
-            // Ambil harga satuan berdasarkan kategori customer
-            $produkHarga = ProdukHarga::where('produk_id', $produk->produk_id)
-                ->where('customer_kategori_id', $customer->customer_kategori_id)
-                ->first();
-
-            $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-
-            // Parse nilai
-            $jumlah = (float) ($produk->jumlah ?? 1);
+            // Parse jumlah untuk menentukan tier
+            $jumlah = (int) ($produk->jumlah ?? 1);
             if ($jumlah <= 0) $jumlah = 1;
+            
+            // Ambil harga satuan berdasarkan tiering
+            $hargaSatuan = static::getHargaSatuanByTiering(
+                $produk->produk_id,
+                $customer->customer_kategori_id,
+                $jumlah
+            );
+
+            // Konversi ke float untuk perhitungan
+            $jumlahFloat = (float) $jumlah;
 
             $panjang = $produk->panjang ? (float) $produk->panjang : 1.0;
             if ($panjang <= 0) $panjang = 1.0;
@@ -728,7 +1043,7 @@ class DeskprintResource extends Resource
             if ($lebar <= 0) $lebar = 1.0;
 
             // Hitung total produk
-            $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
+            $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
 
             // Tambah harga design (single value)
             if ($produk->design_id) {

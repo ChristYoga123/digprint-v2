@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('produk_id')->constrained('produks')->cascadeOnDelete();
             $table->foreignId('customer_kategori_id')->constrained('customer_kategoris')->cascadeOnDelete();
+            $table->unsignedInteger('jumlah_pesanan_minimal')->default(1);
+            $table->unsignedInteger('jumlah_pesanan_maksimal')->default(1);
             $table->unsignedBigInteger('harga');
             $table->timestamps();
         });
