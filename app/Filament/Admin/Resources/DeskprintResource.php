@@ -255,6 +255,14 @@ class DeskprintResource extends Resource
                                         ->visible(fn (Forms\Get $get) => !empty($get('produk_id')))
                                         ->helperText('Pilih design jika diperlukan. Pilih "Tidak Pakai Design" jika customer sudah punya design sendiri.')
                                         ->columnSpanFull(),
+                                    Forms\Components\TextInput::make('link_design')
+                                        ->label('Link Design')
+                                        ->url()
+                                        ->placeholder('https://example.com/design')
+                                        ->maxLength(255)
+                                        ->visible(fn (Forms\Get $get) => !empty($get('produk_id')) && ($get('design_id') === 'none' || $get('design_id') === null))
+                                        ->helperText('Masukkan link design jika customer sudah punya design sendiri')
+                                        ->columnSpanFull(),
                                     Forms\Components\CheckboxList::make('addons')
                                         ->label('Pilih Addons')
                                         ->options(function (Forms\Get $get) {

@@ -254,6 +254,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 'panjang' => $item->panjang,
                 'lebar' => $item->lebar,
                 'design_id' => $item->design_id,
+                'link_design' => $item->link_design ?? null,
                 'addons' => $item->addons ?? [],
                 'total_harga_produk' => $item->total_harga_produk,
                 'keterangan' => $item->keterangan ?? null,
@@ -394,7 +395,9 @@ class KasirPage extends Page implements HasTable, HasForms
                     'panjang' => $item['panjang'],
                     'lebar' => $item['lebar'],
                     'design_id' => $item['design_id'] ?? null,
+                    'link_design' => $item['link_design'] ?? null,
                     'addons' => $addons,
+                    'keterangan' => $item['keterangan'] ?? null,
                     'total_harga_produk_sebelum_diskon' => $hargaSebelumDiskon,
                     'total_diskon_produk' => $diskonProduk,
                     'total_harga_produk_setelah_diskon' => $hargaSetelahDiskon,
@@ -486,11 +489,17 @@ class KasirPage extends Page implements HasTable, HasForms
             }
 
             // Create TransaksiProduks and TransaksiProses
+            $linkDesigns = []; // Kumpulkan semua link_design untuk disimpan di transaksis
             foreach ($transaksiProduks as $produkData) {
                 // Normalize addons: jika empty array, set menjadi null
                 $addons = $produkData['addons'] ?? null;
                 if (is_array($addons) && empty($addons)) {
                     $addons = null;
+                }
+                
+                // Kumpulkan link_design jika ada
+                if (!empty($produkData['link_design'])) {
+                    $linkDesigns[] = $produkData['link_design'];
                 }
                 
                 $transaksiProduk = TransaksiProduk::create([
@@ -500,6 +509,7 @@ class KasirPage extends Page implements HasTable, HasForms
                     'panjang' => $produkData['panjang'],
                     'lebar' => $produkData['lebar'],
                     'design_id' => $produkData['design_id'] ?? null,
+                    'link_design' => $produkData['link_design'] ?? null,
                     'addons' => $addons,
                     'keterangan' => $produkData['keterangan'] ?? null,
                     'total_harga_produk_sebelum_diskon' => $produkData['total_harga_produk_sebelum_diskon'],
@@ -550,6 +560,15 @@ class KasirPage extends Page implements HasTable, HasForms
                         $urutan++;
                     }
                 }
+            }
+            
+            // Update transaksis dengan link_design jika ada
+            if (!empty($linkDesigns)) {
+                // Gabungkan semua link_design dengan separator baris baru
+                $linkDesignCombined = implode("\n", array_unique($linkDesigns));
+                $transaksi->update([
+                    'link_design' => $linkDesignCombined
+                ]);
             }
 
             DB::commit();
