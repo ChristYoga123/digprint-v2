@@ -228,6 +228,9 @@ class DeskprintResource extends Resource
                                         ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
                                             if ($state === 'none') {
                                                 $set('design_id', null);
+                                            } else {
+                                                // Jika memilih design, reset link_design
+                                                $set('link_design', null);
                                             }
                                             
                                             // Hitung ulang total_harga_produk saat design berubah
@@ -251,7 +254,7 @@ class DeskprintResource extends Resource
                                             }
                                         })
                                         ->dehydrated(fn ($state) => $state !== 'none' && $state !== null)
-                                        ->live()
+                                        ->live(onBlur: false)
                                         ->visible(fn (Forms\Get $get) => !empty($get('produk_id')))
                                         ->helperText('Pilih design jika diperlukan. Pilih "Tidak Pakai Design" jika customer sudah punya design sendiri.')
                                         ->columnSpanFull(),
@@ -260,7 +263,22 @@ class DeskprintResource extends Resource
                                         ->url()
                                         ->placeholder('https://example.com/design')
                                         ->maxLength(255)
-                                        ->visible(fn (Forms\Get $get) => !empty($get('produk_id')) && ($get('design_id') === 'none' || $get('design_id') === null))
+                                        ->live(onBlur: false)
+                                        ->visible(function (Forms\Get $get) {
+                                            $produkId = $get('produk_id');
+                                            if (empty($produkId)) {
+                                                return false;
+                                            }
+                                            
+                                            $designId = $get('design_id');
+                                            // Tampilkan jika design_id adalah 'none', null, atau empty
+                                            // Perlu cek dengan lebih eksplisit karena bisa jadi string 'none' atau null
+                                            if ($designId === 'none' || $designId === null || $designId === '') {
+                                                return true;
+                                            }
+                                            
+                                            return false;
+                                        })
                                         ->helperText('Masukkan link design jika customer sudah punya design sendiri')
                                         ->columnSpanFull(),
                                     Forms\Components\CheckboxList::make('addons')
