@@ -159,7 +159,7 @@ class ProduksiResource extends Resource
                     ->label('Kloter')
                     ->icon('heroicon-o-plus')
                     ->color('warning')
-                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null)
+                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->is_subjoin)
                     ->form([
                         Select::make('kloter_id')
                             ->label('Pilih Kloter')
@@ -188,6 +188,7 @@ class ProduksiResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Proses Produksi')
                     ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan proses: ' . $record->produkProses->nama)
+                    ->visible(fn(TransaksiProses $record) => !$record->is_subjoin)
                     ->form(function(TransaksiProses $record) {
                         $form = [];
                         
@@ -373,6 +374,73 @@ class ProduksiResource extends Resource
                             
                             Notification::make()
                                 ->title('Gagal menyelesaikan proses')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Actions\Action::make('selesaikan_subjoin')
+                    ->label('Selesaikan Subjoin')
+                    ->icon('heroicon-o-check')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Selesaikan Subjoin Produksi')
+                    ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan subjoin proses: ' . $record->produkProses->nama . '?')
+                    ->visible(fn(TransaksiProses $record) => $record->is_subjoin)
+                    ->action(function(TransaksiProses $record) {
+                        try {
+                            DB::beginTransaction();
+
+                            // Update status proses
+                            $record->update([
+                                'status_proses' => StatusProsesEnum::SELESAI->value,
+                            ]);
+
+                            // Refresh untuk mendapatkan data terbaru
+                            $record->refresh();
+                            $transaksiProduk = $record->transaksiProduk;
+                            $transaksiProduk->load('transaksiProses');
+
+                            // Cek apakah semua proses transaksi sudah selesai
+                            $allProcessesComplete = $transaksiProduk->transaksiProses
+                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
+
+                            if ($allProcessesComplete) {
+                                // Update status transaksi menjadi SELESAI
+                                $transaksiProduk->transaksi->update([
+                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
+                                ]);
+                            }
+
+                            // Jika ini proses dalam kloter, cek apakah semua proses dalam kloter sudah selesai
+                            if ($record->kloter_id) {
+                                $kloter = $record->kloter;
+                                $allComplete = $kloter->transaksiProses()
+                                    ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value)
+                                    ->count() === 0;
+
+                                if ($allComplete) {
+                                    $kloter->update([
+                                        'status' => KloterStatusEnum::SELESAI->value,
+                                        'completed_by' => Auth::id(),
+                                        'completed_at' => now(),
+                                    ]);
+                                }
+                            }
+
+                            DB::commit();
+
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body('Subjoin produksi berhasil diselesaikan')
+                                ->success()
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            
+                            Notification::make()
+                                ->title('Gagal menyelesaikan subjoin')
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();

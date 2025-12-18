@@ -30,5 +30,10 @@ class TransaksiProduk extends Model
     public function transaksiProses()
     {
         return $this->hasMany(TransaksiProses::class);
+    }       
+
+    public function tipeSubjoin()
+    {
+        return $this->belongsTo(ProdukProsesKategori::class, 'tipe_subjoin_id');
     }
 }

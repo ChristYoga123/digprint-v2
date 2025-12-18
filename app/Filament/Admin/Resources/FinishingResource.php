@@ -142,11 +142,23 @@ class FinishingResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Finishing')
                     ->modalDescription('Pilih addon/finishing yang sudah selesai dikerjakan')
+                    ->visible(function(TransaksiProduk $record) {
+                        // Hidden jika semua proses addon adalah subjoin
+                        $nonSubjoinAddons = $record->transaksiProses
+                            ->filter(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && !$tp->is_subjoin
+                            );
+                        return $nonSubjoinAddons->isNotEmpty();
+                    })
                     ->form(function(TransaksiProduk $record) {
+                        // Hanya tampilkan addon yang bukan subjoin
                         $addonOptions = $record->transaksiProses
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
+                                && !$tp->is_subjoin
                             )
                             ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
                             ->toArray();
@@ -274,6 +286,90 @@ class FinishingResource extends Resource
                             
                             Notification::make()
                                 ->title('Gagal menyelesaikan finishing')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Actions\Action::make('selesaikan_subjoin')
+                    ->label('Selesaikan Subjoin')
+                    ->icon('heroicon-o-check')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Selesaikan Subjoin Finishing')
+                    ->modalDescription('Pilih subjoin finishing yang sudah selesai')
+                    ->visible(function(TransaksiProduk $record) {
+                        // Hanya tampil jika ada proses subjoin yang belum selesai
+                        $subjoinAddons = $record->transaksiProses
+                            ->filter(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && $tp->is_subjoin
+                            );
+                        return $subjoinAddons->isNotEmpty();
+                    })
+                    ->form(function(TransaksiProduk $record) {
+                        $subjoinOptions = $record->transaksiProses
+                            ->filter(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && $tp->is_subjoin
+                            )
+                            ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
+                            ->toArray();
+
+                        return [
+                            CheckboxList::make('completed_subjoin_ids')
+                                ->label('Subjoin Finishing yang Sudah Selesai')
+                                ->options($subjoinOptions)
+                                ->required()
+                                ->minItems(1),
+                        ];
+                    })
+                    ->action(function(TransaksiProduk $record, array $data) {
+                        try {
+                            DB::beginTransaction();
+
+                            $completedSubjoinIds = $data['completed_subjoin_ids'] ?? [];
+
+                            foreach ($completedSubjoinIds as $transaksiProsesId) {
+                                $transaksiProses = $record->transaksiProses->find($transaksiProsesId);
+                                
+                                if (!$transaksiProses) continue;
+
+                                // Update status proses subjoin (tanpa pengurangan bahan)
+                                $transaksiProses->update([
+                                    'status_proses' => StatusProsesEnum::SELESAI->value,
+                                ]);
+                            }
+
+                            // Refresh data
+                            $record->load('transaksiProses');
+
+                            // Cek apakah semua proses (termasuk addon) sudah selesai
+                            $allProcessesComplete = $record->transaksiProses
+                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
+
+                            if ($allProcessesComplete) {
+                                // Update status transaksi menjadi SELESAI
+                                $record->transaksi->update([
+                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
+                                ]);
+                            }
+
+                            DB::commit();
+
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body('Subjoin finishing berhasil diselesaikan' . ($allProcessesComplete ? '. Transaksi sudah selesai!' : ''))
+                                ->success()
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            
+                            Notification::make()
+                                ->title('Gagal menyelesaikan subjoin finishing')
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();

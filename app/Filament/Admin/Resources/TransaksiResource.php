@@ -15,13 +15,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\Transaksi\TipeSubjoinEnum;
 use Filament\Notifications\Notification;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Infolists\Components\Livewire;
 use App\Enums\Transaksi\StatusTransaksiEnum;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Enums\Transaksi\StatusPembayaranEnum;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\TransaksiResource\Pages;
 use App\Livewire\Admin\TransaksiResource\DetailPembayaranTable;
 use App\Filament\Admin\Resources\TransaksiResource\RelationManagers;
@@ -107,128 +108,11 @@ class TransaksiResource extends Resource
                     ->options(StatusPembayaranEnum::class),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Lihat Detail')
-                    ->modalHeading(fn(Transaksi $record) => 'Detail Transaksi: ' . $record->kode)
-                    ->modalContent(function (Transaksi $record) {
-                        $kalkulasi = $record->transaksiKalkulasi;
-                        if (!$kalkulasi) {
-                            return new HtmlString('<p>Kalkulasi tidak ditemukan</p>');
-                        }
-
-                        $customer = $kalkulasi->customer;
-                        // Load transaksiKalkulasiProduks dengan semua kolom termasuk keterangan
-                        $produks = $kalkulasi->transaksiKalkulasiProduks()->get();
-
-                        $html = '<div style="font-family: sans-serif;">';
-                        $html .= '<div style="margin-bottom: 16px; padding: 12px; background: #f3f4f6; border-radius: 8px;">';
-                        $html .= '<strong>Customer:</strong> [' . $customer->customerKategori->kode . '] - ' . $customer->nama . '<br>';
-                        $html .= '<strong>Kode Kalkulasi:</strong> ' . $kalkulasi->kode;
-                        $html .= '</div>';
-
-                        $totalKeseluruhan = 0;
-                        $produkCounter = 0;
-
-                        foreach ($produks as $produk) {
-                            $produkModel = $produk->produk;
-                            if (!$produkModel) continue;
-
-                            $produkCounter++;
-                            
-                            // Ambil harga satuan berdasarkan kategori customer
-                            $produkHarga = \App\Models\ProdukHarga::where('produk_id', $produk->produk_id)
-                                ->where('customer_kategori_id', $customer->customer_kategori_id)
-                                ->first();
-                            
-                            $hargaSatuan = $produkHarga ? (float) $produkHarga->harga : 0.0;
-                            
-                            $jumlah = (float) ($produk->jumlah ?? 1);
-                            $panjang = $produk->panjang ? (float) $produk->panjang : 1.0;
-                            $lebar = $produk->lebar ? (float) $produk->lebar : 1.0;
-                            
-                            $totalProduk = $hargaSatuan * $jumlah * $panjang * $lebar;
-                            
-                            $html .= '<div style="border: 1px solid #e5e7eb; padding: 16px; margin-bottom: 16px; border-radius: 8px;">';
-                            $html .= '<h4 style="margin: 0 0 12px 0; color: #374151;">Produk #' . $produkCounter . ': [' . $produkModel->kode . '] - ' . $produkModel->nama . '</h4>';
-                            $html .= '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">';
-                            $html .= '<div><strong>Harga Satuan:</strong> ' . formatRupiah($hargaSatuan) . '</div>';
-                            $html .= '<div><strong>Jumlah:</strong> ' . $jumlah . '</div>';
-                            
-                            if ($produk->panjang && $produk->lebar) {
-                                $panjangDisplay = rtrim(rtrim(number_format($panjang, 2, '.', ''), '0'), '.');
-                                $lebarDisplay = rtrim(rtrim(number_format($lebar, 2, '.', ''), '0'), '.');
-                                $html .= '<div><strong>Dimensi:</strong> ' . $panjangDisplay . ' x ' . $lebarDisplay . '</div>';
-                            } else {
-                                $html .= '<div><strong>Dimensi:</strong> Standar</div>';
-                            }
-                            
-                            $html .= '<div><strong>Subtotal Produk:</strong> ' . formatRupiah($totalProduk) . '</div>';
-                            $panjangDisplay = rtrim(rtrim(number_format($panjang, 2, '.', ''), '0'), '.');
-                            $lebarDisplay = rtrim(rtrim(number_format($lebar, 2, '.', ''), '0'), '.');
-                            $html .= '<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">(' . formatRupiah($hargaSatuan) . ' × ' . $jumlah . ' × ' . $panjangDisplay . ' × ' . $lebarDisplay . ')</div>';
-                            $html .= '</div>';
-                            
-                            // Tampilkan keterangan jika ada
-                            $keterangan = isset($produk->keterangan) ? $produk->keterangan : null;
-                            if (!empty($keterangan)) {
-                                $html .= '<div style="margin-top: 8px; padding: 8px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">';
-                                $html .= '<strong>Keterangan:</strong> ' . nl2br(e($keterangan));
-                                $html .= '</div>';
-                            }
-                            
-                            // Hitung dan tampilkan design
-                            $totalDesign = 0.0;
-                            if ($produk->design_id) {
-                                $design = \App\Models\ProdukProses::where('id', $produk->design_id)
-                                    ->where('produk_proses_kategori_id', 1)
-                                    ->first();
-                                if ($design) {
-                                    $html .= '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f3f4f6;">';
-                                    $html .= '<strong>Design:</strong><br>';
-                                    $designHarga = (float) ($design->harga ?? 0);
-                                    $html .= '• ' . $design->nama . ': ' . formatRupiah($designHarga);
-                                    $totalDesign = $designHarga;
-                                    $html .= '</div>';
-                                }
-                            }
-                            
-                            // Hitung dan tampilkan addon
-                            $totalAddon = 0.0;
-                            if ($produk->addons && is_array($produk->addons) && !empty($produk->addons)) {
-                                $addons = \App\Models\ProdukProses::whereIn('id', $produk->addons)
-                                    ->whereNotNull('harga')
-                                    ->where('produk_proses_kategori_id', 3)
-                                    ->get();
-                                if ($addons->count() > 0) {
-                                    $html .= '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f3f4f6;">';
-                                    $html .= '<strong>Addons:</strong><br>';
-                                    foreach ($addons as $addon) {
-                                        $html .= '• ' . $addon->nama . ': ' . formatRupiah($addon->harga) . '<br>';
-                                        $totalAddon += (float) $addon->harga;
-                                    }
-                                    $html .= '<strong>Total Addon: ' . formatRupiah($totalAddon) . '</strong>';
-                                    $html .= '</div>';
-                                }
-                            }
-                            
-                            $totalProdukFinal = $totalProduk + $totalDesign + $totalAddon;
-                            
-                            $html .= '<div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #3b82f6; font-weight: bold; color: #1d4ed8;">';
-                            $html .= 'Total Produk #' . $produkCounter . ': ' . formatRupiah($totalProdukFinal);
-                            $html .= '</div>';
-                            $html .= '</div>';
-                            
-                            $totalKeseluruhan += $totalProdukFinal;
-                        }
-                        
-                        $html .= '<div style="background: #f8fafc; border: 2px solid #3b82f6; padding: 16px; border-radius: 8px; text-align: center; margin-top: 16px;">';
-                        $html .= '<h3 style="margin: 0; color: #1d4ed8; font-size: 20px;">TOTAL KESELURUHAN: ' . formatRupiah($totalKeseluruhan) . '</h3>';
-                        $html .= '</div>';
-                        $html .= '</div>';
-                        
-                        return new HtmlString($html);
-                    })
-                    ->modalWidth('4xl'),
+                Tables\Actions\Action::make('detail_transaksi')
+                    ->label('Detail Transaksi')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->url(fn(Transaksi $record) => Pages\TransaksiDetailPage::getUrl(['record' => $record->id])),
                 Tables\Actions\Action::make('detail_pembayaran')
                     ->label('Detail Pembayaran')
                     ->icon('heroicon-o-credit-card')
@@ -358,6 +242,7 @@ class TransaksiResource extends Resource
     {
         return [
             'index' => Pages\ManageTransaksis::route('/'),
+            'detail' => Pages\TransaksiDetailPage::route('/{record}/detail'),
         ];
     }
 }
