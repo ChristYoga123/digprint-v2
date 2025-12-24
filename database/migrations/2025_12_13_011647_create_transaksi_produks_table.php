@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaksi_id')->constrained('transaksis')->cascadeOnDelete();
             $table->foreignId('produk_id')->constrained('produks')->cascadeOnDelete();
+            $table->string('judul_pesanan');
             $table->unsignedInteger('jumlah');
             $table->decimal('panjang', 10, 2)->nullable();
             $table->decimal('lebar', 10, 2)->nullable();
@@ -24,7 +25,6 @@ return new class extends Migration
             $table->unsignedBigInteger('total_diskon_produk')->default(0); // jika diskon per item
             $table->unsignedBigInteger('total_harga_produk_setelah_diskon'); // hasil dari total_harga_produk_sebelum_diskon - total_diskon_produk
             $table->longText('keterangan')->nullable();
-            $table->foreignId('tipe_subjoin_id')->nullable()->constrained('produk_proses_kategoris')->cascadeOnDelete(); // [Pra Produksi, Produksi, Finishing]
             $table->timestamps();
         });
     }

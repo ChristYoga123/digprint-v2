@@ -148,7 +148,7 @@ class FinishingResource extends Resource
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
-                                && !$tp->is_subjoin
+                                && !$tp->apakah_menggunakan_subjoin
                             );
                         return $nonSubjoinAddons->isNotEmpty();
                     })
@@ -158,7 +158,7 @@ class FinishingResource extends Resource
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
-                                && !$tp->is_subjoin
+                                && !$tp->apakah_menggunakan_subjoin
                             )
                             ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
                             ->toArray();
@@ -304,7 +304,7 @@ class FinishingResource extends Resource
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
-                                && $tp->is_subjoin
+                                && $tp->apakah_menggunakan_subjoin
                             );
                         return $subjoinAddons->isNotEmpty();
                     })
@@ -313,7 +313,7 @@ class FinishingResource extends Resource
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
-                                && $tp->is_subjoin
+                                && $tp->apakah_menggunakan_subjoin
                             )
                             ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
                             ->toArray();

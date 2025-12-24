@@ -250,6 +250,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 'id' => $item->id,
                 'produk_id' => $item->produk_id,
                 'produk_nama' => $item->produk->nama,
+                'judul_pesanan' => $item->judul_pesanan ?? null,
                 'jumlah' => $item->jumlah,
                 'panjang' => $item->panjang,
                 'lebar' => $item->lebar,
@@ -391,6 +392,7 @@ class KasirPage extends Page implements HasTable, HasForms
 
                 $transaksiProduks[] = [
                     'produk_id' => $item['produk_id'],
+                    'judul_pesanan' => $item['judul_pesanan'] ?? null,
                     'jumlah' => $item['jumlah'],
                     'panjang' => $item['panjang'],
                     'lebar' => $item['lebar'],
@@ -505,6 +507,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 $transaksiProduk = TransaksiProduk::create([
                     'transaksi_id' => $transaksi->id,
                     'produk_id' => $produkData['produk_id'],
+                    'judul_pesanan' => $produkData['judul_pesanan'] ?? null,
                     'jumlah' => $produkData['jumlah'],
                     'panjang' => $produkData['panjang'],
                     'lebar' => $produkData['lebar'],

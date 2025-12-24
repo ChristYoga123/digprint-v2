@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\ProdukHarga;
 use Filament\Support\RawJs;
+use Illuminate\Support\HtmlString;
 use App\Models\CustomerKategori;
 use Filament\Resources\Resource;
 use App\Models\TransaksiKalkulasi;
@@ -67,6 +68,9 @@ class DeskprintResource extends Resource
                                     }
                                 })
                                 ->schema([
+                                    Forms\Components\TextInput::make('judul_pesanan')
+                                        ->label('Judul Pesanan')
+                                        ->required(),
                                     Forms\Components\Grid::make(2)
                                         ->schema([
                                             Forms\Components\Select::make('produk_id')
@@ -141,7 +145,6 @@ class DeskprintResource extends Resource
                                                 ->label('Panjang')
                                                 ->required()
                                                 ->numeric()
-                                                ->minValue(1)
                                                 ->live(onBlur: true)
                                                 ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                                     // Hitung ulang total_harga_produk saat panjang berubah
@@ -169,7 +172,6 @@ class DeskprintResource extends Resource
                                                 ->label('Lebar')
                                                 ->required()
                                                 ->numeric()
-                                                ->minValue(1)
                                                 ->live(onBlur: true)
                                                 ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                                     // Hitung ulang total_harga_produk saat lebar berubah
@@ -691,6 +693,14 @@ class DeskprintResource extends Resource
                                                 }
                                                 
                                                 $html .= '<div style="border: 1px solid #e5e7eb; padding: 16px; margin-bottom: 16px; border-radius: 8px;">';
+                                                
+                                                // Tampilkan judul pesanan jika ada
+                                                if (isset($produk['judul_pesanan']) && !empty($produk['judul_pesanan'])) {
+                                                    $html .= '<div style="margin-bottom: 8px; padding: 8px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 4px;">';
+                                                    $html .= '<strong style="color: #059669;">Judul Pesanan:</strong> ' . e($produk['judul_pesanan']);
+                                                    $html .= '</div>';
+                                                }
+                                                
                                                 $html .= '<h4 style="margin: 0 0 12px 0; color: #374151;">Produk #' . $produkCounter . ': [' . $produkModel->kode . '] - ' . $produkModel->nama . '</h4>';
                                                 $html .= '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">';
                                                 $html .= '<div><strong>Harga Satuan:</strong> ' . formatRupiah($hargaSatuan) . '</div>';
@@ -758,7 +768,7 @@ class DeskprintResource extends Resource
                                                     $totalProdukFinal = $totalProduk + $totalDesign + $totalAddon;
                                                 }
                                                 
-                                                $html .= '<div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #3b82f6; font-weight: bold; color: #1d4ed8;">';
+                                                $html .= '<div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #10b981; font-weight: bold; color: #059669;">';
                                                 $html .= 'Total Produk #' . $produkCounter . ': ' . formatRupiah($totalProdukFinal);
                                                 $html .= '</div>';
                                                 $html .= '</div>';
@@ -766,8 +776,8 @@ class DeskprintResource extends Resource
                                                 $totalKeseluruhan += $totalProdukFinal;
                                             }
                                             
-                                            $html .= '<div style="background: #f8fafc; border: 2px solid #3b82f6; padding: 16px; border-radius: 8px; text-align: center;">';
-                                            $html .= '<h3 style="margin: 0; color: #1d4ed8; font-size: 20px;">TOTAL KESELURUHAN: ' . formatRupiah($totalKeseluruhan) . '</h3>';
+                                            $html .= '<div style="background: #f0fdf4; border: 2px solid #10b981; padding: 16px; border-radius: 8px; text-align: center;">';
+                                            $html .= '<h3 style="margin: 0; color: #059669; font-size: 20px;">TOTAL KESELURUHAN: ' . formatRupiah($totalKeseluruhan) . '</h3>';
                                             $html .= '</div>';
                                             $html .= '</div>';
                                             
@@ -1132,6 +1142,13 @@ class DeskprintResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->label('Lihat Kalkulasi')
+                    ->icon('heroicon-o-eye')
+                    ->color('success')
+                    ->modalHeading(fn(TransaksiKalkulasi $record) => 'Ringkasan Biaya - ' . $record->kode)
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
                 Tables\Actions\EditAction::make()
                     ->after(function ($record) {
                         // Update total_harga_produk untuk setiap produk setelah edit

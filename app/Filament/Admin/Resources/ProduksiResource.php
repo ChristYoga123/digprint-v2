@@ -159,7 +159,7 @@ class ProduksiResource extends Resource
                     ->label('Kloter')
                     ->icon('heroicon-o-plus')
                     ->color('warning')
-                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->is_subjoin)
+                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->apakah_menggunakan_subjoin)
                     ->form([
                         Select::make('kloter_id')
                             ->label('Pilih Kloter')
@@ -188,7 +188,7 @@ class ProduksiResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Proses Produksi')
                     ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan proses: ' . $record->produkProses->nama)
-                    ->visible(fn(TransaksiProses $record) => !$record->is_subjoin)
+                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin)
                     ->form(function(TransaksiProses $record) {
                         $form = [];
                         
@@ -386,7 +386,7 @@ class ProduksiResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Subjoin Produksi')
                     ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan subjoin proses: ' . $record->produkProses->nama . '?')
-                    ->visible(fn(TransaksiProses $record) => $record->is_subjoin)
+                    ->visible(fn(TransaksiProses $record) => $record->apakah_menggunakan_subjoin)
                     ->action(function(TransaksiProses $record) {
                         try {
                             DB::beginTransaction();

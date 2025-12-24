@@ -15,7 +15,12 @@ class ProdukProses extends Model
 
     public function prosesKategori()
     {
-        return $this->belongsTo(ProdukProsesKategori::class);
+        return $this->belongsTo(ProdukProsesKategori::class, 'produk_proses_kategori_id');
+    }
+
+    public function produkProsesKategori()
+    {
+        return $this->belongsTo(ProdukProsesKategori::class, 'produk_proses_kategori_id');
     }
 
     public function produkProsesBahans()

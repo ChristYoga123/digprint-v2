@@ -1,7 +1,9 @@
 <?php
 
+use App\Enums\Utils\TipeNotificationEnum;
 use App\Models\Supplier;
 use Illuminate\Support\Str;
+use Filament\Notifications\Notification;
 
 function generateKode($prefix = null)
 {
@@ -56,4 +58,13 @@ function getSupplierPaymentMethods($supplier)
     }
     
     return $methods;
+}
+
+function filamentNotification(TipeNotificationEnum $tipe, string $message)
+{
+    return Notification::make()
+        ->title($tipe->getTitle())
+        ->body($message)
+        ->{$tipe->getMethod()}()
+        ->send();
 }

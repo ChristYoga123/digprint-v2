@@ -15,9 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaksi_produk_id')->constrained('transaksi_produks')->cascadeOnDelete();
             $table->foreignId('produk_proses_id')->constrained('produk_proses')->cascadeOnDelete();
-            $table->string('nama_vendor');
-            $table->unsignedBigInteger('harga_vendor');
-            $table->boolean('is_selesai')->default(false);
+            $table->string('nama_vendor')->nullable();
+            $table->unsignedBigInteger('harga_vendor')->nullable();
+            $table->boolean('apakah_subjoin_diapprove')->default(false);
+            $table->boolean('apakah_subjoin_selesai')->default(false);
             $table->timestamps();
         });
     }

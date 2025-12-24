@@ -129,7 +129,7 @@ class PraProduksiResource extends Resource
                     ->visible(function(TransaksiProduk $record) {
                         // Hidden jika proses adalah subjoin
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses && !$designProses->is_subjoin;
+                        return $designProses && !$designProses->apakah_menggunakan_subjoin;
                     })
                     ->action(function(TransaksiProduk $record, array $data) {
                         try {
@@ -184,7 +184,7 @@ class PraProduksiResource extends Resource
                     ->visible(function(TransaksiProduk $record) {
                         // Hanya tampil jika proses adalah subjoin
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses && $designProses->is_subjoin;
+                        return $designProses && $designProses->apakah_menggunakan_subjoin;
                     })
                     ->action(function(TransaksiProduk $record) {
                         try {

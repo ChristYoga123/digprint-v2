@@ -55,6 +55,11 @@
                             <div class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex-1">
+                                        @if(!empty($item['judul_pesanan']))
+                                            <div class="text-sm font-semibold text-primary-600 dark:text-primary-400 mb-1">
+                                                {{ $item['judul_pesanan'] }}
+                                            </div>
+                                        @endif
                                         <h4 class="font-semibold">{{ $item['produk_nama'] }}</h4>
                                         <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             <div>Jumlah: {{ $item['jumlah'] }}</div>

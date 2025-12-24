@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaksi_kalkulasi_id')->constrained('transaksi_kalkulasis')->cascadeOnDelete();
             $table->foreignId('produk_id')->constrained('produks')->cascadeOnDelete();
+            $table->string('judul_pesanan');
             $table->unsignedInteger('jumlah');
             $table->decimal('panjang', 10, 2)->nullable();
             $table->decimal('lebar', 10, 2)->nullable();

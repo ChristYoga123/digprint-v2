@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('status_proses'); // [Belum, Dalam Proses, Selesai]
             $table->boolean('apakah_perlu_sample_approval')->default(false);
             $table->string('status_sample_approval')->nullable(); // 1: Pending, 2: Approved, 3: Rejected
-            $table->boolean('is_subjoin')->default(false);
+            $table->boolean('apakah_menggunakan_subjoin')->default(false);
             $table->timestamps();
         });
     }
