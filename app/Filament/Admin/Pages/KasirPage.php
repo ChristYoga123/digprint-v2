@@ -257,6 +257,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 'design_id' => $item->design_id,
                 'link_design' => $item->link_design ?? null,
                 'addons' => $item->addons ?? [],
+                'proses_perlu_sample_approval' => $item->proses_perlu_sample_approval ?? [],
                 'total_harga_produk' => $item->total_harga_produk,
                 'keterangan' => $item->keterangan ?? null,
             ];
@@ -399,6 +400,7 @@ class KasirPage extends Page implements HasTable, HasForms
                     'design_id' => $item['design_id'] ?? null,
                     'link_design' => $item['link_design'] ?? null,
                     'addons' => $addons,
+                    'proses_perlu_sample_approval' => $item['proses_perlu_sample_approval'] ?? [],
                     'keterangan' => $item['keterangan'] ?? null,
                     'total_harga_produk_sebelum_diskon' => $hargaSebelumDiskon,
                     'total_diskon_produk' => $diskonProduk,
@@ -423,11 +425,6 @@ class KasirPage extends Page implements HasTable, HasForms
                 $jumlahKembalian = $jumlahBayarParsed - $totalHargaTransaksiSetelahDiskon;
             }
 
-            // Check if user is admin (super_admin) for approved_diskon_by
-            /** @var User|null $user */
-            $user = Auth::user();
-            $isAdmin = $user instanceof User && $user->hasRole('super_admin');
-
             // Create Transaksi
             $transaksi = Transaksi::create([
                 'kode' => date('Ymd') . '-' . generateKode('TRX'),
@@ -437,7 +434,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 'jenis_diskon' => ($totalDiskonItem > 0 && $totalDiskonInvoice > 0) ? 'Kombinasi' : ($totalDiskonItem > 0 ? 'Per Item' : ($totalDiskonInvoice > 0 ? 'Per Invoice' : null)),
                 'total_diskon_transaksi' => $totalDiskonTransaksi > 0 ? $totalDiskonTransaksi : null,
                 'total_harga_transaksi_setelah_diskon' => $totalHargaTransaksiSetelahDiskon,
-                'approved_diskon_by' => ($totalDiskonTransaksi > 0 && $isAdmin) ? Auth::id() : null,
+                'approved_diskon_by' => null, // Harus di-approve di PengajuanDiskonResource
                 'status_transaksi' => StatusTransaksiEnum::BELUM->value,
                 'status_pembayaran' => $this->statusPembayaran,
                 'metode_pembayaran' => $this->metodePembayaran ?? null,
@@ -445,6 +442,7 @@ class KasirPage extends Page implements HasTable, HasForms
                 'jumlah_kembalian' => $jumlahKembalian,
                 'tanggal_pembayaran' => $this->tanggalPembayaran ?? null,
                 'tanggal_jatuh_tempo' => $this->tanggalJatuhTempo ?? null,
+                'created_by' => Auth::id(), // Track siapa yang checkout transaksi
             ]);
 
             // Create PencatatanKeuangan untuk jumlah bayar (hanya jika jumlah bayar > 0)
@@ -521,14 +519,23 @@ class KasirPage extends Page implements HasTable, HasForms
                 ]);
 
                 $urutan = 1;
+                
+                // Ambil data proses yang perlu sample approval dari kalkulasi
+                $prosesPerluSampleApproval = $produkData['proses_perlu_sample_approval'] ?? [];
+                if (!is_array($prosesPerluSampleApproval)) {
+                    $prosesPerluSampleApproval = [];
+                }
 
                 // Jika ada design_id, buat proses desain terlebih dahulu dengan urutan 1
                 if (!empty($produkData['design_id'])) {
+                    // Cek apakah design termasuk dalam proses yang perlu sample approval
+                    $perluSample = in_array((int) $produkData['design_id'], $prosesPerluSampleApproval);
                     TransaksiProses::create([
                         'transaksi_produk_id' => $transaksiProduk->id,
                         'produk_proses_id' => $produkData['design_id'],
                         'urutan' => $urutan,
                         'status_proses' => StatusProsesEnum::BELUM->value,
+                        'apakah_perlu_sample_approval' => $perluSample,
                     ]);
                     $urutan++;
                 }
@@ -542,11 +549,14 @@ class KasirPage extends Page implements HasTable, HasForms
 
                 // Tambahkan proses produksi setelah desain (jika ada)
                 foreach ($produkProses as $pp) {
+                    // Cek apakah proses ini termasuk yang perlu sample approval
+                    $perluSample = in_array((int) $pp->id, $prosesPerluSampleApproval);
                     TransaksiProses::create([
                         'transaksi_produk_id' => $transaksiProduk->id,
                         'produk_proses_id' => $pp->id,
                         'urutan' => $urutan,
                         'status_proses' => StatusProsesEnum::BELUM->value,
+                        'apakah_perlu_sample_approval' => $perluSample,
                     ]);
                     $urutan++;
                 }
@@ -554,11 +564,14 @@ class KasirPage extends Page implements HasTable, HasForms
                 // Add addons as additional proses (after production processes)
                 if (!empty($produkData['addons']) && is_array($produkData['addons'])) {
                     foreach ($produkData['addons'] as $addonProdukProsesId) {
+                        // Cek apakah addon ini termasuk yang perlu sample approval
+                        $perluSample = in_array((int) $addonProdukProsesId, $prosesPerluSampleApproval);
                         TransaksiProses::create([
                             'transaksi_produk_id' => $transaksiProduk->id,
                             'produk_proses_id' => $addonProdukProsesId,
                             'urutan' => $urutan,
                             'status_proses' => StatusProsesEnum::BELUM->value,
+                            'apakah_perlu_sample_approval' => $perluSample,
                         ]);
                         $urutan++;
                     }

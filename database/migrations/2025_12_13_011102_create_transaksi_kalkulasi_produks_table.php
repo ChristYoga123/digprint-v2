@@ -20,7 +20,9 @@ return new class extends Migration
             $table->decimal('panjang', 10, 2)->nullable();
             $table->decimal('lebar', 10, 2)->nullable();
             $table->foreignId('design_id')->nullable()->constrained('produk_proses')->cascadeOnDelete(); // ID dari ProdukProses design yang dipilih
+            $table->string('link_design')->nullable(); // link design jika customer sudah punya design sendiri
             $table->json('addons')->nullable();
+            $table->json('proses_perlu_sample_approval')->nullable(); // array produk_proses_id yang perlu sample approval
             $table->longText('keterangan')->nullable();
             $table->unsignedBigInteger('total_harga_produk');
             $table->timestamps();

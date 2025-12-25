@@ -375,6 +375,65 @@ class DeskprintResource extends Resource
                                             return 'Pilih addon yang tersedia untuk produk ini';
                                         })
                                         ->columnSpanFull(),
+                                    Forms\Components\CheckboxList::make('proses_perlu_sample_approval')
+                                        ->label('Proses Perlu Sample Approval')
+                                        ->options(function (Forms\Get $get) {
+                                            $produkId = $get('produk_id');
+                                            $designId = $get('design_id');
+                                            $addons = $get('addons') ?? [];
+                                            
+                                            if (!$produkId) {
+                                                return [];
+                                            }
+                                            
+                                            $options = [];
+                                            
+                                            // 1. Design (jika dipilih dan mengurangi bahan)
+                                            if ($designId && $designId !== 'none') {
+                                                $design = ProdukProses::find($designId);
+                                                if ($design && $design->apakah_mengurangi_bahan) {
+                                                    $options[$design->id] = "[Design] {$design->nama}";
+                                                }
+                                            }
+                                            
+                                            // 2. Proses Produksi (selalu tampil karena wajib dan mengurangi bahan)
+                                            $produksiProses = ProdukProses::where('produk_id', $produkId)
+                                                ->where('produk_proses_kategori_id', 2) // Produksi
+                                                ->where('apakah_mengurangi_bahan', true)
+                                                ->get();
+                                            
+                                            foreach ($produksiProses as $pp) {
+                                                $options[$pp->id] = "[Produksi] {$pp->nama}";
+                                            }
+                                            
+                                            // 3. Addon/Finishing (hanya yang dipilih dan mengurangi bahan)
+                                            if (!empty($addons) && is_array($addons)) {
+                                                foreach ($addons as $addonId) {
+                                                    $addon = ProdukProses::find($addonId);
+                                                    if ($addon && $addon->apakah_mengurangi_bahan) {
+                                                        $options[$addon->id] = "[Finishing] {$addon->nama}";
+                                                    }
+                                                }
+                                            }
+                                            
+                                            return $options;
+                                        })
+                                        ->columns(1)
+                                        ->visible(function (Forms\Get $get) {
+                                            $produkId = $get('produk_id');
+                                            if (!$produkId) {
+                                                return false;
+                                            }
+                                            
+                                            // Tampilkan jika ada proses yang mengurangi bahan
+                                            return ProdukProses::where('produk_id', $produkId)
+                                                ->where('apakah_mengurangi_bahan', true)
+                                                ->whereIn('produk_proses_kategori_id', [2, 3])
+                                                ->exists();
+                                        })
+                                        ->helperText('Pilih proses yang memerlukan approval sample dari customer sebelum produksi penuh')
+                                        ->columnSpanFull()
+                                        ->live(),
                                     Forms\Components\Textarea::make('keterangan')
                                         ->label('Keterangan')
                                         ->rows(2)
@@ -395,6 +454,13 @@ class DeskprintResource extends Resource
                                         $data['addons'] = array_map('intval', array_filter($data['addons']));
                                     } else {
                                         $data['addons'] = null; // Set null jika kosong
+                                    }
+                                    
+                                    // Normalize proses_perlu_sample_approval menjadi integer array
+                                    if (isset($data['proses_perlu_sample_approval']) && is_array($data['proses_perlu_sample_approval']) && !empty($data['proses_perlu_sample_approval'])) {
+                                        $data['proses_perlu_sample_approval'] = array_map('intval', array_filter($data['proses_perlu_sample_approval']));
+                                    } else {
+                                        $data['proses_perlu_sample_approval'] = null;
                                     }
                                     
                                     // Hitung total_harga_produk sebelum create
@@ -423,6 +489,17 @@ class DeskprintResource extends Resource
                                         }
                                     } else {
                                         $data['addons'] = null;
+                                    }
+                                    
+                                    // Normalize proses_perlu_sample_approval menjadi integer array
+                                    if (isset($data['proses_perlu_sample_approval'])) {
+                                        if (is_array($data['proses_perlu_sample_approval']) && !empty($data['proses_perlu_sample_approval'])) {
+                                            $data['proses_perlu_sample_approval'] = array_map('intval', array_filter($data['proses_perlu_sample_approval']));
+                                        } else {
+                                            $data['proses_perlu_sample_approval'] = null;
+                                        }
+                                    } else {
+                                        $data['proses_perlu_sample_approval'] = null;
                                     }
                                     
                                     // Hitung total_harga_produk sebelum save

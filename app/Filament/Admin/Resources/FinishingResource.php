@@ -136,6 +136,73 @@ class FinishingResource extends Resource
                 //
             ])
             ->actions([
+                Actions\Action::make('kirim_sample')
+                    ->label(function(TransaksiProduk $record) {
+                        // Ambil proses addon yang perlu sample approval
+                        $proses = $record->transaksiProses
+                            ->first(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->apakah_perlu_sample_approval
+                                && $tp->produkProses?->apakah_mengurangi_bahan
+                                && $tp->status_proses != StatusProsesEnum::SELESAI
+                                && !$tp->apakah_menggunakan_subjoin
+                            );
+                        return 'Sample (' . ($proses?->jumlah_sample ?? 0) . ')';
+                    })
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Sample Finishing')
+                    ->modalDescription(function(TransaksiProduk $record) {
+                        $proses = $record->transaksiProses
+                            ->first(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->apakah_perlu_sample_approval
+                                && $tp->produkProses?->apakah_mengurangi_bahan
+                            );
+                        return 'Konfirmasi pengiriman sample ke-' . (($proses?->jumlah_sample ?? 0) + 1) . ' untuk proses: ' . ($proses?->produkProses?->nama ?? '-');
+                    })
+                    ->modalSubmitActionLabel('Kirim Sample')
+                    ->visible(function(TransaksiProduk $record) {
+                        // Tampilkan jika ada proses addon yang perlu sample approval
+                        return $record->transaksiProses
+                            ->contains(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->apakah_perlu_sample_approval
+                                && $tp->produkProses?->apakah_mengurangi_bahan
+                                && $tp->status_proses != StatusProsesEnum::SELESAI
+                                && !$tp->apakah_menggunakan_subjoin
+                            );
+                    })
+                    ->action(function(TransaksiProduk $record) {
+                        try {
+                            // Increment jumlah_sample untuk proses finishing yang perlu sample approval
+                            $proses = $record->transaksiProses
+                                ->first(fn($tp) => 
+                                    $tp->produkProses?->produk_proses_kategori_id == 3 
+                                    && $tp->apakah_perlu_sample_approval
+                                    && $tp->produkProses?->apakah_mengurangi_bahan
+                                    && $tp->status_proses != StatusProsesEnum::SELESAI
+                                    && !$tp->apakah_menggunakan_subjoin
+                                );
+                            
+                            if ($proses) {
+                                $proses->increment('jumlah_sample');
+                                
+                                Notification::make()
+                                    ->title('Sample Terkirim')
+                                    ->body('Sample ke-' . $proses->jumlah_sample . ' berhasil dikirim untuk approval.')
+                                    ->success()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Gagal mengirim sample')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Actions\Action::make('selesaikan_finishing')
                     ->label('Selesaikan')
                     ->icon('heroicon-o-check-circle')

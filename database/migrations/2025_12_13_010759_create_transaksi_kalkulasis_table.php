@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('kode')->unique();
             $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete(); // user yang membuat kalkulasi
             $table->timestamps();
         });
     }

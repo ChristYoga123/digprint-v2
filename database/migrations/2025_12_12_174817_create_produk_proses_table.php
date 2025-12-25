@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('mesin_id')->nullable()->constrained('mesins')->cascadeOnDelete(); // jika kategorinya produksi
             $table->integer('urutan')->nullable(); // terisi jika kategorinya produksi. Addon/Finishing tidak perlu urutan
             $table->boolean('apakah_mengurangi_bahan')->default(false); // jika finishing bisa true bisa false
+            $table->boolean('apakah_perlu_sample_approval')->default(false); // apakah proses ini perlu sample approval
             $table->timestamps();
         });
     }

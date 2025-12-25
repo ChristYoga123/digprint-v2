@@ -133,16 +133,19 @@ class PengajuanSubjoinResource extends Resource
                     ])
                     ->action(function(TransaksiProdukSubjoin $record, array $data) {
                         try {
-                            $updateData = [
+                            // Update record subjoin dengan data vendor
+                            $record->update([
                                 'apakah_subjoin_diapprove' => true,
-                            ];
+                                'nama_vendor' => $data['nama_vendor'],
+                                'harga_vendor' => $data['harga_vendor'],
+                            ]);
 
-                            if (!empty($data['pakai_vendor'])) {
-                                $updateData['nama_vendor'] = $data['nama_vendor'];
-                                $updateData['harga_vendor'] = $data['harga_vendor'];
-                            }
-
-                            $record->update($updateData);
+                            // Update transaksi_proses untuk set apakah_menggunakan_subjoin = true
+                            \App\Models\TransaksiProses::where('transaksi_produk_id', $record->transaksi_produk_id)
+                                ->where('produk_proses_id', $record->produk_proses_id)
+                                ->update([
+                                    'apakah_menggunakan_subjoin' => true
+                                ]);
 
                             Notification::make()
                                 ->title('Berhasil')

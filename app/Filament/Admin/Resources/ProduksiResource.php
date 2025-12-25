@@ -3,8 +3,6 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Models\Kloter;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\BahanMutasi;
@@ -15,17 +13,14 @@ use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
 use App\Enums\BahanMutasi\TipeEnum;
 use Illuminate\Support\Facades\Auth;
-use App\Models\TransaksiProsesSample;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Model;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use App\Models\TransaksiProsesBahanUsage;
 use Filament\Tables\Filters\SelectFilter;
 use App\Models\BahanMutasiPenggunaanBatch;
 use App\Enums\Transaksi\StatusTransaksiEnum;
-use Filament\Forms\Components\ToggleButtons;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Enums\Kloter\StatusEnum as KloterStatusEnum;
 use App\Filament\Admin\Resources\ProduksiResource\Pages;
@@ -96,6 +91,16 @@ class ProduksiResource extends Resource
                                 ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value);
                         });
                     })
+                    // FILTER URUTAN: Hanya tampilkan jika proses sebelumnya sudah selesai
+                    ->where(function($query) {
+                        $query->where('urutan', 1) // Urutan pertama selalu tampil
+                            ->orWhereRaw('NOT EXISTS (
+                                SELECT 1 FROM transaksi_proses AS prev
+                                WHERE prev.transaksi_produk_id = transaksi_proses.transaksi_produk_id
+                                AND prev.urutan < transaksi_proses.urutan
+                                AND prev.status_proses != ?
+                            )', [StatusProsesEnum::SELESAI->value]);
+                    })
                     ->with([
                         'transaksiProduk.transaksi.customer',
                         'transaksiProduk.produk',
@@ -156,6 +161,37 @@ class ProduksiResource extends Resource
                     ->color('info')
                     ->url(fn(TransaksiProses $record) => $record->transaksiProduk->transaksi->design)
                     ->openUrlInNewTab(),
+                Actions\Action::make('kirim_sample')
+                    ->label(fn(TransaksiProses $record) => 'Sample (' . ($record->jumlah_sample ?? 0) . ')')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Sample')
+                    ->modalDescription(fn(TransaksiProses $record) => 'Konfirmasi pengiriman sample ke-' . (($record->jumlah_sample ?? 0) + 1) . ' untuk proses: ' . $record->produkProses?->nama)
+                    ->modalSubmitActionLabel('Kirim Sample')
+                    ->visible(function(TransaksiProses $record) {
+                        return $record->apakah_perlu_sample_approval 
+                            && $record->produkProses?->apakah_mengurangi_bahan
+                            && $record->status_proses != StatusProsesEnum::SELESAI
+                            && !$record->apakah_menggunakan_subjoin;
+                    })
+                    ->action(function(TransaksiProses $record) {
+                        try {
+                            $record->increment('jumlah_sample');
+                            
+                            Notification::make()
+                                ->title('Sample Terkirim')
+                                ->body('Sample ke-' . $record->jumlah_sample . ' berhasil dikirim untuk approval.')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Gagal mengirim sample')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Actions\Action::make('tambah_ke_kloter')
                     ->label('Kloter')
                     ->icon('heroicon-o-plus')
@@ -183,59 +219,38 @@ class ProduksiResource extends Resource
                             ->send();
                     }),
                 Actions\Action::make('approve_proses')
-                    ->label('Selesaikan')
+                    ->label(function(TransaksiProses $record) {
+                        // Tampilkan jumlah sample jika ada
+                        if ($record->jumlah_sample > 0) {
+                            return 'Selesaikan (Sample: ' . $record->jumlah_sample . ')';
+                        }
+                        return 'Selesaikan';
+                    })
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Proses Produksi')
-                    ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan proses: ' . $record->produkProses->nama)
-                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin)
-                    ->form(function(TransaksiProses $record) {
-                        $form = [];
-                        
-                        // Semua proses produksi (kategori 2) wajib ditanyai pakai sample atau tidak
-                        if ($record->produkProses 
-                            && $record->produkProses->produk_proses_kategori_id == 2) {
-                            $form[] = ToggleButtons::make('pakai_sample')
-                                ->label('Pakai Sample?')
-                                ->options([
-                                    true => 'Ya',
-                                    false => 'Tidak',
-                                ])
-                                ->colors([
-                                    true => 'success',
-                                    false => 'danger',
-                                ])
-                                ->default(false)
-                                ->grouped()
-                                ->boolean()
-                                ->live(onBlur: false)
-                                ->required()
-                                ->afterStateUpdated(function (Set $set, $state) {
-                                    // Reset jumlah sample jika tidak pakai sample
-                                    if (!$state) {
-                                        $set('jumlah_sample', 0);
-                                    }
-                                });
-                            
-                            $form[] = TextInput::make('jumlah_sample')
-                                ->label('Jumlah Sample')
-                                ->numeric()
-                                ->minValue(1)
-                                ->default(0)
-                                ->required(fn(Get $get) => (bool) $get('pakai_sample'))
-                                ->visible(fn(Get $get) => (bool) $get('pakai_sample'))
-                                ->helperText('Masukkan jumlah sample yang akan dibuat');
+                    ->modalDescription(function(TransaksiProses $record) {
+                        $desc = 'Selesaikan proses: ' . $record->produkProses->nama;
+                        if ($record->jumlah_sample > 0) {
+                            $jumlahPesanan = $record->transaksiProduk->jumlah;
+                            $jumlahSample = $record->jumlah_sample;
+                            $desc .= "\n\nPerhitungan bahan:\n";
+                            $desc .= "- Pesanan: {$jumlahPesanan} pcs\n";
+                            $desc .= "- Sample: {$jumlahSample} pcs\n";
+                            $desc .= "- Total: " . ($jumlahPesanan + $jumlahSample) . " pcs";
                         }
-                        
-                        return $form;
+                        return $desc;
                     })
-                    ->action(function(TransaksiProses $record, array $data) {
+                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin)
+                    ->action(function(TransaksiProses $record) {
                         try {
                             DB::beginTransaction();
 
                             $jumlahPesanan = $record->transaksiProduk->jumlah;
-                            $jumlahSample = $data['jumlah_sample'] ?? 0;
+                            // Ambil jumlah sample yang sudah ditrack via tombol "Kirim Sample"
+                            $jumlahSample = $record->jumlah_sample ?? 0;
+                            // Total bahan = jumlah pesanan + jumlah sample
                             $totalBahanDibutuhkan = $jumlahPesanan + $jumlahSample;
 
                             // Jika proses mengurangi bahan, lakukan FIFO reduction
@@ -320,19 +335,11 @@ class ProduksiResource extends Resource
                                 }
                             }
 
-                            // Jika pakai sample, buat record sample
-                            if (!empty($data['pakai_sample']) && $jumlahSample > 0) {
-                                TransaksiProsesSample::create([
-                                    'transaksi_proses_id' => $record->id,
-                                    'operator_id' => Auth::id(),
-                                    'jumlah_sample' => $jumlahSample,
-                                    'status' => \App\Enums\TransaksiProsesSample\StatusSampleApprovalEnum::PENDING->value,
-                                ]);
-                            }
-
                             // Update status proses
                             $record->update([
                                 'status_proses' => StatusProsesEnum::SELESAI->value,
+                                'completed_by' => Auth::id(),
+                                'completed_at' => now(),
                             ]);
 
                             // Refresh untuk mendapatkan data terbaru

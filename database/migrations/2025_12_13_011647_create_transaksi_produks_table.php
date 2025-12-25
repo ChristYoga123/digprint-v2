@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('panjang', 10, 2)->nullable();
             $table->decimal('lebar', 10, 2)->nullable();
             $table->foreignId('design_id')->nullable()->constrained('produk_proses')->cascadeOnDelete(); // ID dari ProdukProses design yang dipilih
+            $table->string('link_design')->nullable(); // link design jika customer sudah punya design sendiri
             $table->json('addons')->nullable();
             $table->unsignedBigInteger('total_harga_produk_sebelum_diskon');
             $table->unsignedBigInteger('total_diskon_produk')->default(0); // jika diskon per item

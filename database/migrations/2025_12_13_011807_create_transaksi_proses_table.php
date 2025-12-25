@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaksi_produk_id')->constrained('transaksi_produks')->cascadeOnDelete();
             $table->foreignId('produk_proses_id')->constrained('produk_proses')->cascadeOnDelete();
+            $table->unsignedBigInteger('kloter_id')->nullable(); // FK akan dibuat setelah tabel kloters ada
             $table->unsignedInteger('urutan');
             $table->string('status_proses'); // [Belum, Dalam Proses, Selesai]
             $table->boolean('apakah_perlu_sample_approval')->default(false);
-            $table->string('status_sample_approval')->nullable(); // 1: Pending, 2: Approved, 3: Rejected
+            $table->unsignedInteger('jumlah_sample')->default(0); // tracking jumlah sample yang sudah dikirim
+            $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete(); // siapa yang menyelesaikan proses
+            $table->timestamp('completed_at')->nullable(); // kapan proses diselesaikan
             $table->boolean('apakah_menggunakan_subjoin')->default(false);
             $table->timestamps();
         });

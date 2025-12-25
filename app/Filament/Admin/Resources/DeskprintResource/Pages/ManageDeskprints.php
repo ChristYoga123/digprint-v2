@@ -9,6 +9,7 @@ use App\Models\ProdukProses;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Auth;
 
 class ManageDeskprints extends ManageRecords
 {
@@ -26,6 +27,10 @@ class ManageDeskprints extends ManageRecords
                     } else {
                         $data['total_harga_kalkulasi'] = 0;
                     }
+                    
+                    // Set created_by ke user yang sedang login
+                    $data['created_by'] = Auth::id();
+                    
                     return $data;
                 })
                 ->after(function ($record) {

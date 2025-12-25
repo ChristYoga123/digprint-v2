@@ -24,6 +24,12 @@ return new class extends Migration
             
             $table->index(['mesin_id', 'tanggal', 'status']);
         });
+        
+        // Tambahkan FK constraint ke transaksi_proses setelah tabel kloters dibuat
+        Schema::table('transaksi_proses', function (Blueprint $table) {
+            $table->foreign('kloter_id')->references('id')->on('kloters')->cascadeOnDelete();
+            $table->index('kloter_id');
+        });
     }
 
     /**
@@ -31,6 +37,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('transaksi_proses', function (Blueprint $table) {
+            $table->dropForeign(['kloter_id']);
+            $table->dropIndex(['kloter_id']);
+        });
+        
         Schema::dropIfExists('kloters');
     }
 };

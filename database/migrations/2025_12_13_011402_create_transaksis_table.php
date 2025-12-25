@@ -23,10 +23,14 @@ return new class extends Migration
             $table->foreignId('approved_diskon_by')->nullable()->constrained('users')->cascadeOnDelete(); // jika ada diskon
             $table->string('status_transaksi'); // [Belum, Dalam Proses, Selesai]
             $table->string('status_pembayaran'); // 1: Lunas 2: Term of Payment
+            $table->string('metode_pembayaran')->nullable(); // metode pembayaran
+            $table->unsignedBigInteger('jumlah_bayar')->default(0); // total yang sudah dibayar
             $table->unsignedBigInteger('jumlah_kembalian')->default(0); // jumlah kembalian jika lunas saja. jika top selalu 0
             $table->date('tanggal_pembayaran')->nullable(); // jika lunas/top
             $table->date('tanggal_jatuh_tempo')->nullable(); // jika term of payment
             $table->string('design')->nullable(); // Akan diisi setelah design diapprove
+            $table->string('link_design')->nullable(); // link design jika customer sudah punya design sendiri
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete(); // user yang checkout transaksi
             $table->timestamps();
         });
     }
