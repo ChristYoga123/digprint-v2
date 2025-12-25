@@ -63,7 +63,8 @@ class PraProduksiResource extends Resource
                             ->whereHas('produkProses', function($q) {
                                 $q->where('produk_proses_kategori_id', 1); // Design
                             })
-                            ->where('status_proses', StatusProsesEnum::BELUM);
+                            ->where('status_proses', StatusProsesEnum::BELUM)
+                            ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin
                     })
                     ->with([
                         'transaksi.customer',
@@ -174,56 +175,7 @@ class PraProduksiResource extends Resource
                                 ->send();
                         }
                     }),
-                Action::make('selesaikan_subjoin')
-                    ->label('Selesaikan Subjoin')
-                    ->icon('heroicon-o-check')
-                    ->color('info')
-                    ->requiresConfirmation()
-                    ->modalHeading('Selesaikan Subjoin Design')
-                    ->modalDescription(fn(TransaksiProduk $record) => 'Selesaikan subjoin design untuk transaksi ' . $record->transaksi->kode . '?')
-                    ->visible(function(TransaksiProduk $record) {
-                        // Hanya tampil jika proses adalah subjoin
-                        $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses && $designProses->apakah_menggunakan_subjoin;
-                    })
-                    ->action(function(TransaksiProduk $record) {
-                        try {
-                            $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                            
-                            if (!$designProses) {
-                                Notification::make()
-                                    ->title('Error')
-                                    ->body('Proses design tidak ditemukan')
-                                    ->danger()
-                                    ->send();
-                                return;
-                            }
 
-                            $designProses->update([
-                                'status_proses' => StatusProsesEnum::SELESAI->value,
-                            ]);
-
-                            // Update status transaksi menjadi PRODUKSI jika masih BELUM
-                            if ($record->transaksi->status_transaksi === StatusTransaksiEnum::BELUM) {
-                                $record->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::PRODUKSI->value,
-                                ]);
-                            }
-
-                            Notification::make()
-                                ->title('Berhasil')
-                                ->body('Subjoin design berhasil diselesaikan.')
-                                ->success()
-                                ->send();
-
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Gagal menyelesaikan subjoin')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
             ])
             ->bulkActions([
                 //

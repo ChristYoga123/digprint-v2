@@ -137,6 +137,12 @@ class TransaksiPlanSubjoinPage extends Page implements HasTable
                                             'produk_proses_id' => $proses->produk_proses_id,
                                             'apakah_subjoin_diapprove' => false, // Set ke 0 dulu
                                         ]);
+                                        
+                                        // Update transaksi_proses untuk set apakah_menggunakan_subjoin = true
+                                        $proses->update([
+                                            'apakah_menggunakan_subjoin' => true
+                                        ]);
+                                        
                                         $createdCount++;
                                     } else {
                                         $skippedCount++;
@@ -182,6 +188,13 @@ class TransaksiPlanSubjoinPage extends Page implements HasTable
                                     'produk_proses_id' => $data['produk_proses_id'],
                                     'apakah_subjoin_diapprove' => false, // Set ke 0 dulu
                                 ]);
+
+                                // Update transaksi_proses untuk set apakah_menggunakan_subjoin = true
+                                TransaksiProses::where('transaksi_produk_id', $record->id)
+                                    ->where('produk_proses_id', $data['produk_proses_id'])
+                                    ->update([
+                                        'apakah_menggunakan_subjoin' => true
+                                    ]);
 
                                 DB::commit();
                                 filamentNotification(TipeNotificationEnum::SUCCESS, 'Subjoin berhasil dibuat');

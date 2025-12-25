@@ -85,6 +85,7 @@ class ProduksiResource extends Resource
                         StatusProsesEnum::BELUM,
                         StatusProsesEnum::DALAM_PROSES
                     ])
+                    ->where('apakah_menggunakan_subjoin', false) // Hanya yang tidak subjoin
                     // All design processes completed (kategori 1, urutan 1)
                     ->whereHas('transaksiProduk', function($query) {
                         $query->whereDoesntHave('transaksiProses', function($q) {
@@ -251,7 +252,12 @@ class ProduksiResource extends Resource
                                     if ($dipengaruhiDimensi) {
                                         $panjang = $transaksiProduk->panjang ?? 0;
                                         $lebar = $transaksiProduk->lebar ?? 0;
-                                        $luasPerUnit = $panjang * $lebar; // cm²
+                                        
+                                        // Tambahkan 0.05m (5cm) untuk kelebihan/toleransi
+                                        $panjangDenganToleransi = $panjang + 0.05;
+                                        $lebarDenganToleransi = $lebar + 0.05;
+                                        
+                                        $luasPerUnit = $panjangDenganToleransi * $lebarDenganToleransi; // m²
                                         $totalJumlahBahan = $luasPerUnit * $totalBahanDibutuhkan;
                                     } else {
                                         // Jika tidak dipengaruhi dimensi, hitung normal
@@ -379,73 +385,7 @@ class ProduksiResource extends Resource
                                 ->send();
                         }
                     }),
-                Actions\Action::make('selesaikan_subjoin')
-                    ->label('Selesaikan Subjoin')
-                    ->icon('heroicon-o-check')
-                    ->color('info')
-                    ->requiresConfirmation()
-                    ->modalHeading('Selesaikan Subjoin Produksi')
-                    ->modalDescription(fn(TransaksiProses $record) => 'Selesaikan subjoin proses: ' . $record->produkProses->nama . '?')
-                    ->visible(fn(TransaksiProses $record) => $record->apakah_menggunakan_subjoin)
-                    ->action(function(TransaksiProses $record) {
-                        try {
-                            DB::beginTransaction();
 
-                            // Update status proses
-                            $record->update([
-                                'status_proses' => StatusProsesEnum::SELESAI->value,
-                            ]);
-
-                            // Refresh untuk mendapatkan data terbaru
-                            $record->refresh();
-                            $transaksiProduk = $record->transaksiProduk;
-                            $transaksiProduk->load('transaksiProses');
-
-                            // Cek apakah semua proses transaksi sudah selesai
-                            $allProcessesComplete = $transaksiProduk->transaksiProses
-                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
-
-                            if ($allProcessesComplete) {
-                                // Update status transaksi menjadi SELESAI
-                                $transaksiProduk->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
-                                ]);
-                            }
-
-                            // Jika ini proses dalam kloter, cek apakah semua proses dalam kloter sudah selesai
-                            if ($record->kloter_id) {
-                                $kloter = $record->kloter;
-                                $allComplete = $kloter->transaksiProses()
-                                    ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value)
-                                    ->count() === 0;
-
-                                if ($allComplete) {
-                                    $kloter->update([
-                                        'status' => KloterStatusEnum::SELESAI->value,
-                                        'completed_by' => Auth::id(),
-                                        'completed_at' => now(),
-                                    ]);
-                                }
-                            }
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('Berhasil')
-                                ->body('Subjoin produksi berhasil diselesaikan')
-                                ->success()
-                                ->send();
-
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            
-                            Notification::make()
-                                ->title('Gagal menyelesaikan subjoin')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
             ])
             ->bulkActions([
                 //

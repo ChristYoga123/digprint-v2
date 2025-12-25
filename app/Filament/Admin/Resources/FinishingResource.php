@@ -79,12 +79,13 @@ class FinishingResource extends Resource
                         })
                         ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value);
                     })
-                    // Has uncompleted addons
+                    // Has uncompleted addons (yang tidak subjoin)
                     ->whereHas('transaksiProses', function($query) {
                         $query->whereHas('produkProses', function($q) {
                             $q->where('produk_proses_kategori_id', 3);
                         })
-                        ->where('status_proses', StatusProsesEnum::BELUM);
+                        ->where('status_proses', StatusProsesEnum::BELUM)
+                        ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin
                     })
                     ->with([
                         'transaksi.customer',
@@ -192,11 +193,16 @@ class FinishingResource extends Resource
                                         $jumlahPerUnit = $need['jumlah_per_unit'];
                                         $dipengaruhiDimensi = $need['apakah_dipengaruhi_oleh_dimensi'] ?? false;
                                         
-                                        // Jika dipengaruhi dimensi, hitung: (panjang x lebar) x jumlah
+                                        // Jika dipengaruhi dimensi, hitung: (panjang + 0.05m) x (lebar + 0.05m) x jumlah
                                         if ($dipengaruhiDimensi) {
                                             $panjang = $record->panjang ?? 0;
                                             $lebar = $record->lebar ?? 0;
-                                            $luasPerUnit = $panjang * $lebar; // cm²
+                                            
+                                            // Tambahkan 0.05m (5cm) untuk kelebihan/toleransi
+                                            $panjangDenganToleransi = $panjang + 0.05;
+                                            $lebarDenganToleransi = $lebar + 0.05;
+                                            
+                                            $luasPerUnit = $panjangDenganToleransi * $lebarDenganToleransi; // m²
                                             $totalJumlahBahan = $luasPerUnit * $jumlahPesanan;
                                         } else {
                                             // Jika tidak dipengaruhi dimensi, hitung normal
@@ -291,90 +297,7 @@ class FinishingResource extends Resource
                                 ->send();
                         }
                     }),
-                Actions\Action::make('selesaikan_subjoin')
-                    ->label('Selesaikan Subjoin')
-                    ->icon('heroicon-o-check')
-                    ->color('info')
-                    ->requiresConfirmation()
-                    ->modalHeading('Selesaikan Subjoin Finishing')
-                    ->modalDescription('Pilih subjoin finishing yang sudah selesai')
-                    ->visible(function(TransaksiProduk $record) {
-                        // Hanya tampil jika ada proses subjoin yang belum selesai
-                        $subjoinAddons = $record->transaksiProses
-                            ->filter(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
-                                && $tp->status_proses === StatusProsesEnum::BELUM
-                                && $tp->apakah_menggunakan_subjoin
-                            );
-                        return $subjoinAddons->isNotEmpty();
-                    })
-                    ->form(function(TransaksiProduk $record) {
-                        $subjoinOptions = $record->transaksiProses
-                            ->filter(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
-                                && $tp->status_proses === StatusProsesEnum::BELUM
-                                && $tp->apakah_menggunakan_subjoin
-                            )
-                            ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
-                            ->toArray();
 
-                        return [
-                            CheckboxList::make('completed_subjoin_ids')
-                                ->label('Subjoin Finishing yang Sudah Selesai')
-                                ->options($subjoinOptions)
-                                ->required()
-                                ->minItems(1),
-                        ];
-                    })
-                    ->action(function(TransaksiProduk $record, array $data) {
-                        try {
-                            DB::beginTransaction();
-
-                            $completedSubjoinIds = $data['completed_subjoin_ids'] ?? [];
-
-                            foreach ($completedSubjoinIds as $transaksiProsesId) {
-                                $transaksiProses = $record->transaksiProses->find($transaksiProsesId);
-                                
-                                if (!$transaksiProses) continue;
-
-                                // Update status proses subjoin (tanpa pengurangan bahan)
-                                $transaksiProses->update([
-                                    'status_proses' => StatusProsesEnum::SELESAI->value,
-                                ]);
-                            }
-
-                            // Refresh data
-                            $record->load('transaksiProses');
-
-                            // Cek apakah semua proses (termasuk addon) sudah selesai
-                            $allProcessesComplete = $record->transaksiProses
-                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
-
-                            if ($allProcessesComplete) {
-                                // Update status transaksi menjadi SELESAI
-                                $record->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
-                                ]);
-                            }
-
-                            DB::commit();
-
-                            Notification::make()
-                                ->title('Berhasil')
-                                ->body('Subjoin finishing berhasil diselesaikan' . ($allProcessesComplete ? '. Transaksi sudah selesai!' : ''))
-                                ->success()
-                                ->send();
-
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            
-                            Notification::make()
-                                ->title('Gagal menyelesaikan subjoin finishing')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
             ])
             ->bulkActions([
                 //

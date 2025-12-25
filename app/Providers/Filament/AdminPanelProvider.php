@@ -45,6 +45,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource;
 use App\Filament\Admin\Resources\FinishingResource;
+use App\Filament\Admin\Resources\PengajuanSubjoinResource;
+use App\Filament\Admin\Resources\PengajuanDiskonResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Admin\Resources\ProdukProsesKategoriResource;
 
@@ -110,7 +112,12 @@ class AdminPanelProvider extends PanelProvider
                                 ...KasirPage::getNavigationItems(),
                                 ...TransaksiResource::getNavigationItems(),
                             ]),
-                        NavigationGroup::make('Satuan')
+                        NavigationGroup::make('Pengajuan')
+                            ->items([
+                                ...PengajuanSubjoinResource::getNavigationItems(),
+                                ...PengajuanDiskonResource::getNavigationItems(),
+                            ]),
+                        NavigationGroup::make('Gudang')
                             ->items([
                                 ...SatuanResource::getNavigationItems(),
                                 ...BahanResource::getNavigationItems(),
