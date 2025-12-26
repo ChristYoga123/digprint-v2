@@ -270,10 +270,10 @@ class FinishingResource extends Resource
                                             $lebarDenganToleransi = $lebar + 0.05;
                                             
                                             $luasPerUnit = $panjangDenganToleransi * $lebarDenganToleransi; // m²
-                                            $totalJumlahBahan = $luasPerUnit * $jumlahPesanan;
+                                            $totalJumlahBahan = ceil($luasPerUnit * $jumlahPesanan);
                                         } else {
                                             // Jika tidak dipengaruhi dimensi, hitung normal
-                                            $totalJumlahBahan = $jumlahPesanan * $jumlahPerUnit;
+                                            $totalJumlahBahan = ceil($jumlahPesanan * $jumlahPerUnit);
                                         }
 
                                         // Cek stok tersedia

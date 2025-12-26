@@ -273,10 +273,10 @@ class ProduksiResource extends Resource
                                         $lebarDenganToleransi = $lebar + 0.05;
                                         
                                         $luasPerUnit = $panjangDenganToleransi * $lebarDenganToleransi; // m²
-                                        $totalJumlahBahan = $luasPerUnit * $totalBahanDibutuhkan;
+                                        $totalJumlahBahan = ceil($luasPerUnit * $totalBahanDibutuhkan);
                                     } else {
                                         // Jika tidak dipengaruhi dimensi, hitung normal
-                                        $totalJumlahBahan = $totalBahanDibutuhkan * $jumlahPerUnit;
+                                        $totalJumlahBahan = ceil($totalBahanDibutuhkan * $jumlahPerUnit);
                                     }
 
                                     // Cek stok tersedia
