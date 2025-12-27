@@ -31,7 +31,7 @@ use App\Filament\Admin\Resources\TransaksiResource;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use App\Livewire\Admin\TransaksiDetailPage\TransaksiSubjoinTable;
 
-class TransaksiPlanSubjoinPage extends Page implements HasTable
+class TransaksiDetailPage extends Page implements HasTable
 {
     use InteractsWithTable, InteractsWithRecord;
     protected static string $resource = TransaksiResource::class;
@@ -45,7 +45,7 @@ class TransaksiPlanSubjoinPage extends Page implements HasTable
 
     public function getTitle(): string|Htmlable
     {
-        return 'Plan Subjoin Transaksi: ' . $this->record->kode;
+        return 'Detail Transaksi: ' . $this->record->kode;
     }
 
     public function table(Table $table): Table
@@ -64,6 +64,12 @@ class TransaksiPlanSubjoinPage extends Page implements HasTable
                     ->weight('bold'),
             ])
             ->actions([
+                Action::make('print_spk')
+                    ->label('Print SPK')
+                    ->icon('heroicon-o-printer')
+                    ->color('warning')
+                    ->url(fn(TransaksiProduk $record) => route('print.spk', ['transaksi_produk_id' => $record->id]))
+                    ->openUrlInNewTab(),
                 Action::make('lihat_subjoin')
                     ->label('Lihat Subjoin')
                     ->icon('heroicon-o-eye')

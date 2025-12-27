@@ -55,6 +55,7 @@ class KasirPage extends Page implements HasTable, HasForms
     public ?string $jumlahBayar = '0';
     public ?string $tanggalPembayaran = null;
     public ?string $tanggalJatuhTempo = null;
+    public ?string $printNotaSize = 'thermal';
 
     public function mount(): void
     {
@@ -167,6 +168,22 @@ class KasirPage extends Page implements HasTable, HasForms
                             ->minDate(now())
                             ->statePath('tanggalJatuhTempo')
                             ->visible(fn () => $this->statusPembayaran == StatusPembayaranEnum::TERM_OF_PAYMENT->value),
+                    ])
+                    ->visible(fn () => !empty($this->cartItems))
+                    ->collapsible(),
+                Forms\Components\Section::make('Cetak Nota')
+                    ->schema([
+                        Forms\Components\Select::make('printNotaSize')
+                            ->label('Ukuran Kertas')
+                            ->options([
+                                'thermal' => '📱 Thermal (80mm)',
+                                'a5' => '📄 A5',
+                                'a4' => '📑 A4',
+                            ])
+                            ->default('thermal')
+                            ->required()
+                            ->statePath('printNotaSize')
+                            ->helperText('Halaman print nota akan otomatis terbuka setelah checkout'),
                     ])
                     ->visible(fn () => !empty($this->cartItems))
                     ->collapsible(),
@@ -301,6 +318,7 @@ class KasirPage extends Page implements HasTable, HasForms
         $this->jumlahBayar = '0';
         $this->tanggalPembayaran = null;
         $this->tanggalJatuhTempo = null;
+        $this->printNotaSize = 'thermal';
 
         Notification::make()
             ->title('Cart dikosongkan')
@@ -589,6 +607,10 @@ class KasirPage extends Page implements HasTable, HasForms
 
             DB::commit();
 
+            // Store transaksi id and print size before clearing cart
+            $transaksiIdForPrint = $transaksi->id;
+            $printSize = $this->printNotaSize ?? 'thermal';
+
             Notification::make()
                 ->title('Transaksi berhasil dibuat')
                 ->success()
@@ -596,6 +618,9 @@ class KasirPage extends Page implements HasTable, HasForms
 
             // Clear cart
             $this->clearCart();
+
+            // Redirect to print page in new tab using JavaScript
+            $this->js("window.open('" . route('print.nota', ['transaksi_id' => $transaksiIdForPrint, 'size' => $printSize]) . "', '_blank');");
 
         } catch (\Exception $e) {
             DB::rollBack();

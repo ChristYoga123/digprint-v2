@@ -109,6 +109,31 @@ class TransaksiResource extends Resource
             ], layout: FiltersLayout::AboveContent)
             ->actions([
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('print_nota')
+                        ->label('Print Nota')
+                        ->icon('heroicon-o-printer')
+                        ->color('success')
+                        ->form([
+                            Forms\Components\Select::make('size')
+                                ->label('Ukuran Kertas')
+                                ->options([
+                                    'thermal' => '📱 Thermal (80mm)',
+                                    'a5' => '📄 A5',
+                                    'a4' => '📑 A4',
+                                ])
+                                ->default('thermal')
+                                ->required()
+                                ->helperText('Pilih ukuran sesuai printer yang akan digunakan'),
+                        ])
+                        ->action(function (Transaksi $record, array $data, $livewire) {
+                            $url = route('print.nota', [
+                                'transaksi_id' => $record->id,
+                                'size' => $data['size'],
+                            ]);
+                            
+                            // Use JavaScript to open in new tab
+                            $livewire->js("window.open('{$url}', '_blank');");
+                        }),
                     Tables\Actions\ViewAction::make()
                         ->label('Lihat Ringkasan Biaya')
                         ->icon('heroicon-o-document-text')
@@ -242,10 +267,10 @@ class TransaksiResource extends Resource
                         ->modalSubmitAction(false)
                         ->modalCancelActionLabel('Tutup'),
                     Tables\Actions\Action::make('detail_transaksi')
-                        ->label('Plan Subjoin')
+                        ->label('Detail Transaksi')
                         ->icon('heroicon-o-document-text')
                         ->color('info')
-                        ->url(fn(Transaksi $record) => Pages\TransaksiPlanSubjoinPage::getUrl(['record' => $record->id])),
+                        ->url(fn(Transaksi $record) => Pages\TransaksiDetailPage::getUrl(['record' => $record->id])),
                     Tables\Actions\Action::make('detail_pembayaran')
                         ->label('Detail Pembayaran')
                         ->icon('heroicon-o-credit-card')
@@ -376,7 +401,7 @@ class TransaksiResource extends Resource
     {
         return [
             'index' => Pages\ManageTransaksis::route('/'),
-            'detail' => Pages\TransaksiPlanSubjoinPage::route('/{record}/plan-subjoin'),
+            'detail' => Pages\TransaksiDetailPage::route('/{record}/detail-subjoin'),
         ];
     }
 }

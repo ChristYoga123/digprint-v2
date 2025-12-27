@@ -41,4 +41,9 @@ class Transaksi extends Model
     {
         return $this->morphMany(PencatatanKeuangan::class, 'pencatatan_keuangan');
     }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }
