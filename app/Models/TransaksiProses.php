@@ -38,6 +38,14 @@ class TransaksiProses extends Model
         return $this->hasMany(TransaksiProsesBahanUsage::class);
     }
 
+    /**
+     * Get all workers who worked on this process
+     */
+    public function karyawanPekerjaans()
+    {
+        return $this->morphMany(KaryawanPekerjaan::class, 'karyawan_pekerjaan');
+    }
+
     public function canStartProduction(): bool
     {
         // Cek apakah proses sebelumnya sudah selesai

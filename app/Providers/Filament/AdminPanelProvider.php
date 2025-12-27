@@ -47,6 +47,7 @@ use App\Filament\Admin\Resources\BahanMutasiFakturResource;
 use App\Filament\Admin\Resources\FinishingResource;
 use App\Filament\Admin\Resources\PengajuanSubjoinResource;
 use App\Filament\Admin\Resources\PengajuanDiskonResource;
+use App\Filament\Admin\Resources\PengajuanLemburResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Admin\Resources\ProdukProsesKategoriResource;
 
@@ -116,14 +117,7 @@ class AdminPanelProvider extends PanelProvider
                             ->items([
                                 ...PengajuanSubjoinResource::getNavigationItems(),
                                 ...PengajuanDiskonResource::getNavigationItems(),
-                            ]),
-                        NavigationGroup::make('Gudang')
-                            ->items([
-                                ...SatuanResource::getNavigationItems(),
-                                ...BahanResource::getNavigationItems(),
-                                ...POResource::getNavigationItems(),
-                                ...BahanMutasiResource::getNavigationItems(),
-                                ...BahanMutasiFakturResource::getNavigationItems(),
+                                ...PengajuanLemburResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Produksi')
                             ->items([
@@ -133,6 +127,14 @@ class AdminPanelProvider extends PanelProvider
                                 ...PraProduksiResource::getNavigationItems(),
                                 ...ProduksiResource::getNavigationItems(),
                                 ...FinishingResource::getNavigationItems(),
+                            ]),
+                        NavigationGroup::make('Gudang')
+                            ->items([
+                                ...SatuanResource::getNavigationItems(),
+                                ...BahanResource::getNavigationItems(),
+                                ...POResource::getNavigationItems(),
+                                ...BahanMutasiResource::getNavigationItems(),
+                                ...BahanMutasiFakturResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Administrasi')
                             ->items([

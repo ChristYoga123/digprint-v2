@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Mesin;
+use App\Models\KaryawanPekerjaan;
 
 class User extends Authenticatable implements HasAvatar, FilamentUser
 {
@@ -67,5 +68,21 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
     public function mesins()
     {
         return $this->belongsToMany(Mesin::class, 'user_has_mesins', 'karyawan_id', 'mesin_id');
+    }
+
+    /**
+     * Get all work records for this user
+     */
+    public function karyawanPekerjaans()
+    {
+        return $this->hasMany(KaryawanPekerjaan::class, 'karyawan_id');
+    }
+
+    /**
+     * Get overtime records for this user
+     */
+    public function lemburRecords()
+    {
+        return $this->karyawanPekerjaans()->where('tipe', 'Lembur');
     }
 }

@@ -2,16 +2,22 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Models\User;
+use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\BahanMutasi;
 use Filament\Tables\Actions;
 use App\Models\BahanStokBatch;
+use App\Models\TransaksiProses;
 use App\Models\TransaksiProduk;
+use App\Models\KaryawanPekerjaan;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
 use App\Enums\BahanMutasi\TipeEnum;
 use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Notifications\Notification;
@@ -237,6 +243,17 @@ class FinishingResource extends Resource
                                 ->options($addonOptions)
                                 ->required()
                                 ->minItems(1),
+                            Toggle::make('ada_helper')
+                                ->label('Ada teman yang membantu?')
+                                ->live()
+                                ->default(false),
+                            Select::make('helper_ids')
+                                ->label('Pilih Karyawan yang Membantu')
+                                ->options(User::where('is_active', true)->pluck('name', 'id'))
+                                ->multiple()
+                                ->searchable()
+                                ->visible(fn (Forms\Get $get) => $get('ada_helper') === true)
+                                ->helperText('Pilih karyawan yang ikut membantu mengerjakan proses ini'),
                         ];
                     })
                     ->action(function(TransaksiProduk $record, array $data) {
@@ -332,7 +349,30 @@ class FinishingResource extends Resource
                                 // Update status proses addon
                                 $transaksiProses->update([
                                     'status_proses' => StatusProsesEnum::SELESAI->value,
+                                    'completed_by' => Auth::id(),
+                                    'completed_at' => now(),
                                 ]);
+
+                                // Catat karyawan yang mengerjakan proses addon ini
+                                // 1. Karyawan utama (user yang login)
+                                KaryawanPekerjaan::create([
+                                    'karyawan_id' => Auth::id(),
+                                    'tipe' => 'Normal',
+                                    'karyawan_pekerjaan_type' => TransaksiProses::class,
+                                    'karyawan_pekerjaan_id' => $transaksiProses->id,
+                                ]);
+
+                                // 2. Helper (jika ada)
+                                if (!empty($data['ada_helper']) && !empty($data['helper_ids'])) {
+                                    foreach ($data['helper_ids'] as $helperId) {
+                                        KaryawanPekerjaan::create([
+                                            'karyawan_id' => $helperId,
+                                            'tipe' => 'Normal',
+                                            'karyawan_pekerjaan_type' => TransaksiProses::class,
+                                            'karyawan_pekerjaan_id' => $transaksiProses->id,
+                                        ]);
+                                    }
+                                }
                             }
 
                             // Cek apakah semua proses (termasuk addon) sudah selesai
