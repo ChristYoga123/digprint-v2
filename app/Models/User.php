@@ -62,6 +62,10 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
             return Auth::user()->hasRole('super_admin');
         }
 
+        if($panel->getId() === 'ppic') {
+            return Auth::user()->hasRole('ppic');
+        }
+
         return false;
     }
 

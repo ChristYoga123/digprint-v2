@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
+use App\Enums\KaryawanPekerjaan\TipeEnum;
 use App\Filament\Admin\Resources\PengajuanLemburResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 
@@ -36,7 +37,8 @@ class PengajuanLemburResource extends Resource
                     ->label('Karyawan')
                     ->options(User::where('is_active', true)->pluck('name', 'id'))
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->columnSpanFull(),
                 Forms\Components\DateTimePicker::make('jam_lembur_mulai')
                     ->label('Jam Lembur Mulai')
                     ->required()
@@ -53,7 +55,7 @@ class PengajuanLemburResource extends Resource
         return $table
             ->query(
                 KaryawanPekerjaan::query()
-                    ->where('tipe', 'Lembur')
+                    ->where('tipe', TipeEnum::LEMBUR)
                     ->with(['karyawan', 'approvedBy'])
                     ->orderBy('created_at', 'desc')
             )
@@ -276,7 +278,7 @@ class PengajuanLemburResource extends Resource
                         foreach ($data['karyawan_ids'] as $karyawanId) {
                             KaryawanPekerjaan::create([
                                 'karyawan_id' => $karyawanId,
-                                'tipe' => 'Lembur',
+                                'tipe' => TipeEnum::LEMBUR,
                                 'jam_lembur_mulai' => $data['jam_lembur_mulai'],
                                 'jam_lembur_selesai' => $data['jam_lembur_selesai'],
                             ]);
@@ -291,10 +293,9 @@ class PengajuanLemburResource extends Resource
                 Tables\Actions\CreateAction::make()
                     ->label('Tambah Lembur')
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['tipe'] = 'Lembur';
+                        $data['tipe'] = TipeEnum::LEMBUR;
                         return $data;
-                    })
-                    ->columnSpanFull(),
+                    }),
             ]);
     }
 

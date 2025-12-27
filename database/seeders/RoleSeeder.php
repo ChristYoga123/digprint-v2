@@ -21,6 +21,7 @@ class RoleSeeder extends Seeder
         Role::findOrCreate('deskprint');
         Role::findOrCreate('kasir');
         Role::findOrCreate('operator');
+        Role::findOrCreate('ppic');
 
         // TODO: Add other users here
 

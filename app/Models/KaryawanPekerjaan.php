@@ -51,7 +51,7 @@ class KaryawanPekerjaan extends Model
      */
     public function scopeLembur($query)
     {
-        return $query->where('tipe', 'Lembur');
+        return $query->where('tipe', TipeEnum::LEMBUR);
     }
 
     /**
@@ -59,7 +59,7 @@ class KaryawanPekerjaan extends Model
      */
     public function scopeNormal($query)
     {
-        return $query->where('tipe', 'Normal');
+        return $query->where('tipe', TipeEnum::NORMAL);
     }
 
     /**
@@ -67,7 +67,7 @@ class KaryawanPekerjaan extends Model
      */
     public function scopePendingApproval($query)
     {
-        return $query->where('tipe', 'Lembur')
+        return $query->where('tipe', TipeEnum::LEMBUR)
             ->whereNull('apakah_diapprove_lembur');
     }
 
@@ -76,7 +76,7 @@ class KaryawanPekerjaan extends Model
      */
     public function scopeApproved($query)
     {
-        return $query->where('tipe', 'Lembur')
+        return $query->where('tipe', TipeEnum::LEMBUR)
             ->where('apakah_diapprove_lembur', true);
     }
 
@@ -85,7 +85,7 @@ class KaryawanPekerjaan extends Model
      */
     public function scopeRejected($query)
     {
-        return $query->where('tipe', 'Lembur')
+        return $query->where('tipe', TipeEnum::LEMBUR)
             ->where('apakah_diapprove_lembur', false);
     }
 }
