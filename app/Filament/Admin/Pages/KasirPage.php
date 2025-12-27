@@ -10,6 +10,7 @@ use App\Models\TransaksiProses;
 use App\Models\Produk;
 use App\Models\ProdukProses;
 use App\Models\PencatatanKeuangan;
+use App\Models\KaryawanPekerjaan;
 use Filament\Tables\Table;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Contracts\HasTable;
@@ -28,6 +29,7 @@ use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\Transaksi\JenisDiskonEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Enums\TransaksiProses\StatusProsesEnum;
+use App\Enums\KaryawanPekerjaan\TipeEnum;
 
 class KasirPage extends Page implements HasTable, HasForms
 {
@@ -606,6 +608,14 @@ class KasirPage extends Page implements HasTable, HasForms
             }
 
             DB::commit();
+
+            // Catat karyawan kasir yang mengurus transaksi
+            KaryawanPekerjaan::create([
+                'karyawan_id' => Auth::id(),
+                'tipe' => TipeEnum::NORMAL,
+                'karyawan_pekerjaan_type' => Transaksi::class,
+                'karyawan_pekerjaan_id' => $transaksi->id,
+            ]);
 
             // Store transaksi id and print size before clearing cart
             $transaksiIdForPrint = $transaksi->id;

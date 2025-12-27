@@ -6,6 +6,9 @@ use App\Filament\Admin\Resources\DeskprintResource;
 use App\Models\Customer;
 use App\Models\ProdukHarga;
 use App\Models\ProdukProses;
+use App\Models\KaryawanPekerjaan;
+use App\Models\TransaksiKalkulasi;
+use App\Enums\KaryawanPekerjaan\TipeEnum;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Support\Htmlable;
@@ -38,6 +41,14 @@ class ManageDeskprints extends ManageRecords
                     $this->updateTotalHargaProduk($record);
                     // Update total_harga_kalkulasi setelah semua produk dibuat
                     $this->updateTotalHargaKalkulasi($record);
+                    
+                    // Catat karyawan yang membuat kalkulasi
+                    KaryawanPekerjaan::create([
+                        'karyawan_id' => Auth::id(),
+                        'tipe' => TipeEnum::NORMAL,
+                        'karyawan_pekerjaan_type' => TransaksiKalkulasi::class,
+                        'karyawan_pekerjaan_id' => $record->id,
+                    ]);
                 })
                 ->modalHeading('Deskprint'),
         ];

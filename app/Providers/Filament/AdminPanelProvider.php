@@ -31,6 +31,7 @@ use App\Filament\Admin\Resources\KaryawanResource;
 use App\Filament\Admin\Resources\ProduksiResource;
 use App\Filament\Admin\Resources\SupplierResource;
 use App\Filament\Admin\Resources\DeskprintResource;
+use App\Filament\Admin\Resources\FinishingResource;
 use App\Filament\Admin\Resources\PettyCashResource;
 use App\Filament\Admin\Resources\TransaksiResource;
 use App\Filament\Admin\Resources\BahanMutasiResource;
@@ -40,16 +41,21 @@ use FilipFonal\FilamentLogManager\FilamentLogManager;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
+use App\Filament\Admin\Resources\PengajuanDiskonResource;
+use App\Filament\Admin\Resources\PengajuanLemburResource;
 use App\Filament\Admin\Resources\CustomerKategoriResource;
+use App\Filament\Admin\Resources\PengajuanSubjoinResource;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource;
-use App\Filament\Admin\Resources\FinishingResource;
-use App\Filament\Admin\Resources\PengajuanSubjoinResource;
-use App\Filament\Admin\Resources\PengajuanDiskonResource;
-use App\Filament\Admin\Resources\PengajuanLemburResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use App\Filament\Admin\Resources\LaporanKasPemasukanResource;
+use App\Filament\Admin\Resources\LaporanKerjaKaryawanResource;
 use App\Filament\Admin\Resources\ProdukProsesKategoriResource;
+use App\Filament\Admin\Resources\LaporanHutangSupplierResource;
+use App\Filament\Admin\Resources\LaporanLemburKaryawanResource;
+use App\Filament\Admin\Resources\LaporanPembelianHarianResource;
+use App\Filament\Admin\Resources\LaporanPembayaranSupplierResource;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -118,6 +124,16 @@ class AdminPanelProvider extends PanelProvider
                                 ...PengajuanSubjoinResource::getNavigationItems(),
                                 ...PengajuanDiskonResource::getNavigationItems(),
                                 ...PengajuanLemburResource::getNavigationItems(),
+                            ]),
+                        NavigationGroup::make('Laporan')
+                            ->items([
+                                ...LaporanKerjaKaryawanResource::getNavigationItems(),
+                                ...LaporanLemburKaryawanResource::getNavigationItems(),
+                                ...LaporanPembelianHarianResource::getNavigationItems(),
+                                ...LaporanHutangSupplierResource::getNavigationItems(),
+                                ...
+                                LaporanPembayaranSupplierResource::getNavigationItems(),
+                                ...LaporanKasPemasukanResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Produksi')
                             ->items([
