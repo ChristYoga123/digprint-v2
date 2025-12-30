@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Bahan;
 use App\Models\Mesin;
+use App\Models\Proses;
 use App\Models\Produk;
 use App\Models\Satuan;
 use App\Models\Customer;
@@ -158,6 +159,65 @@ class DigprintSeeder extends Seeder
             $kategoriProduksi = ProdukProsesKategori::firstOrCreate(['nama' => 'Produksi']);
             $kategoriFinishing = ProdukProsesKategori::firstOrCreate(['nama' => 'Finishing']);
 
+            // 6.5 Master Proses
+            // Design Proses (dengan harga default)
+            $prosesDesignSimple = Proses::firstOrCreate(
+                ['nama' => 'Design Simple', 'produk_proses_kategori_id' => $kategoriDesign->id],
+                ['harga_default' => 50000]
+            );
+            $prosesDesignPremium = Proses::firstOrCreate(
+                ['nama' => 'Design Premium', 'produk_proses_kategori_id' => $kategoriDesign->id],
+                ['harga_default' => 100000]
+            );
+            $prosesDesignMinimalis = Proses::firstOrCreate(
+                ['nama' => 'Design Minimalis', 'produk_proses_kategori_id' => $kategoriDesign->id],
+                ['harga_default' => 75000]
+            );
+            $prosesDesignElegant = Proses::firstOrCreate(
+                ['nama' => 'Design Elegant', 'produk_proses_kategori_id' => $kategoriDesign->id],
+                ['harga_default' => 150000]
+            );
+
+            // Produksi Proses (tanpa harga default karena harga berdasarkan tiering produk)
+            $prosesCetakKartuNama = Proses::firstOrCreate(
+                ['nama' => 'Cetak Kartu Nama', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+            $prosesCetakUndangan = Proses::firstOrCreate(
+                ['nama' => 'Cetak Undangan', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+            $prosesCetakBrosur = Proses::firstOrCreate(
+                ['nama' => 'Cetak Brosur', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+            $prosesCetakFlyer = Proses::firstOrCreate(
+                ['nama' => 'Cetak Flyer', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+            $prosesLaminating = Proses::firstOrCreate(
+                ['nama' => 'Laminating', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+            $prosesCutting = Proses::firstOrCreate(
+                ['nama' => 'Cutting', 'produk_proses_kategori_id' => $kategoriProduksi->id],
+                ['harga_default' => null]
+            );
+
+            // Finishing Proses (dengan harga default)
+            $prosesMataAyam = Proses::firstOrCreate(
+                ['nama' => 'Mata Ayam', 'produk_proses_kategori_id' => $kategoriFinishing->id],
+                ['harga_default' => 5000]
+            );
+            $prosesStandBanner = Proses::firstOrCreate(
+                ['nama' => 'Stand Banner', 'produk_proses_kategori_id' => $kategoriFinishing->id],
+                ['harga_default' => 15000]
+            );
+            $prosesStaples = Proses::firstOrCreate(
+                ['nama' => 'Staples', 'produk_proses_kategori_id' => $kategoriFinishing->id],
+                ['harga_default' => 3000]
+            );
+
             // 7. Mesin
             $mesinPrinter1 = Mesin::firstOrCreate(
                 ['kode' => 'MES-PRT001'],
@@ -221,6 +281,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Design Simple',
                 ],
                 [
+                    'proses_id' => $prosesDesignSimple->id,
                     'harga' => 50000,
                     'urutan' => 0, // Design selalu di awal
                     'apakah_mengurangi_bahan' => false,
@@ -234,6 +295,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Design Premium',
                 ],
                 [
+                    'proses_id' => $prosesDesignPremium->id,
                     'harga' => 100000,
                     'urutan' => 0,
                     'apakah_mengurangi_bahan' => false,
@@ -248,6 +310,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Cetak Kartu Nama',
                 ],
                 [
+                    'proses_id' => $prosesCetakKartuNama->id,
                     'urutan' => 1,
                     'mesin_id' => $mesinPrinter1->id,
                     'apakah_mengurangi_bahan' => true,
@@ -285,6 +348,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Laminating',
                 ],
                 [
+                    'proses_id' => $prosesLaminating->id,
                     'urutan' => 2,
                     'mesin_id' => $mesinLaminating->id,
                     'apakah_mengurangi_bahan' => false,
@@ -299,6 +363,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Mata Ayam',
                 ],
                 [
+                    'proses_id' => $prosesMataAyam->id,
                     'harga' => 5000,
                     'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
@@ -314,6 +379,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Design Minimalis',
                 ],
                 [
+                    'proses_id' => $prosesDesignMinimalis->id,
                     'harga' => 75000,
                     'urutan' => 0,
                     'apakah_mengurangi_bahan' => false,
@@ -327,6 +393,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Design Elegant',
                 ],
                 [
+                    'proses_id' => $prosesDesignElegant->id,
                     'harga' => 150000,
                     'urutan' => 0,
                     'apakah_mengurangi_bahan' => false,
@@ -340,6 +407,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Design Premium',
                 ],
                 [
+                    'proses_id' => $prosesDesignPremium->id,
                     'harga' => 250000,
                     'urutan' => 0,
                     'apakah_mengurangi_bahan' => false,
@@ -354,6 +422,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Cetak Undangan',
                 ],
                 [
+                    'proses_id' => $prosesCetakUndangan->id,
                     'urutan' => 1,
                     'mesin_id' => $mesinPrinter2->id,
                     'apakah_mengurangi_bahan' => true,
@@ -391,6 +460,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Cutting',
                 ],
                 [
+                    'proses_id' => $prosesCutting->id,
                     'urutan' => 2,
                     'mesin_id' => $mesinCutting->id,
                     'apakah_mengurangi_bahan' => false,
@@ -405,6 +475,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Laminating',
                 ],
                 [
+                    'proses_id' => $prosesLaminating->id,
                     'urutan' => 3,
                     'mesin_id' => $mesinLaminating->id,
                     'apakah_mengurangi_bahan' => false,
@@ -419,6 +490,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Stand Banner',
                 ],
                 [
+                    'proses_id' => $prosesStandBanner->id,
                     'harga' => 15000,
                     'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
@@ -435,6 +507,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Cetak Brosur',
                 ],
                 [
+                    'proses_id' => $prosesCetakBrosur->id,
                     'urutan' => 1,
                     'mesin_id' => $mesinPrinter1->id,
                     'apakah_mengurangi_bahan' => true,
@@ -472,6 +545,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Staples',
                 ],
                 [
+                    'proses_id' => $prosesStaples->id,
                     'harga' => 3000,
                     'mesin_id' => null, // Manual, tidak pakai mesin
                     'apakah_mengurangi_bahan' => false,
@@ -488,6 +562,7 @@ class DigprintSeeder extends Seeder
                     'nama' => 'Cetak Flyer',
                 ],
                 [
+                    'proses_id' => $prosesCetakFlyer->id,
                     'urutan' => 1,
                     'mesin_id' => $mesinPrinter2->id,
                     'apakah_mengurangi_bahan' => true,
@@ -729,10 +804,10 @@ class DigprintSeeder extends Seeder
             $this->command->info('- 1 Supplier');
             $this->command->info('- 4 Bahan');
             $this->command->info('- 3 Proses Kategori');
+            $this->command->info('- 13 Master Proses (Design, Produksi, Finishing)');
             $this->command->info('- 4 Mesin');
-            $this->command->info('- 8+ Proses (Design, Produksi dengan mesin, Finishing tanpa mesin)');
+            $this->command->info('- 18+ Produk Proses (Design, Produksi dengan mesin, Finishing tanpa mesin)');
             $this->command->info('- 4 Produk');
-            $this->command->info('- 3 Transaksi Kalkulasi (siap untuk testing menu kasir)');
             $this->command->info('- 2 Operator Users dengan mesin assignment');
             $this->command->info('- 12 Bahan Stok Batch (3 batch per bahan untuk testing FIFO)');
 
