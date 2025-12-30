@@ -99,16 +99,98 @@ class ProdukResource extends Resource
                             ->relationship('produkProses', function ($query) {
                                 return $query->where('produk_proses_kategori_id', 1); // Design
                             })
+                            ->defaultItems(0)
                             ->schema([
                                 Forms\Components\Hidden::make('produk_proses_kategori_id')
                                     ->default(1), // Design
                                 Forms\Components\Hidden::make('urutan')
                                     ->default(0), // Design selalu di awal (urutan 0)
-                                Forms\Components\TextInput::make('nama')
+                                Forms\Components\Hidden::make('proses_id'),
+                                Forms\Components\Select::make('nama')
                                     ->label('Nama Design')
                                     ->required()
-                                    ->maxLength(255)
-                                    ->placeholder('Contoh: Design Simple, Design Premium, dll')
+                                    ->searchable()
+                                    ->getSearchResultsUsing(function (string $search) {
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', 1)
+                                            ->where('nama', 'like', "%{$search}%")
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(fn ($proses) => [
+                                                $proses->nama => $proses->nama . ($proses->harga_default ? ' (Default: ' . formatRupiah($proses->harga_default) . ')' : '')
+                                            ]);
+                                    })
+                                    ->getOptionLabelUsing(fn ($value) => $value)
+                                    ->live()
+                                    ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                        // Cari proses master dan isi harga default jika ada
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 1)
+                                            ->where('nama', $state)
+                                            ->first();
+                                        if ($proses) {
+                                            $set('proses_id', $proses->id);
+                                            if ($proses->harga_default) {
+                                                $set('harga', $proses->harga_default);
+                                            }
+                                        } else {
+                                            $set('proses_id', null);
+                                        }
+                                    })
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('nama')
+                                            ->label('Nama Design Baru')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->columnSpanFull(),
+                                        Forms\Components\ToggleButtons::make('perlu_harga')
+                                            ->label('Apakah perlu harga default?')
+                                            ->options([
+                                                true => 'Ya',
+                                                false => 'Tidak',
+                                            ])
+                                            ->colors([
+                                                true => 'success',
+                                                false => 'danger',
+                                            ])
+                                            ->default(false)
+                                            ->grouped()
+                                            ->live()
+                                            ->columnSpanFull(),
+                                        Forms\Components\TextInput::make('harga_default')
+                                            ->label('Harga Default')
+                                            ->numeric()
+                                            ->prefix('Rp')
+                                            ->minValue(0)
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(',')
+                                            ->helperText('Harga default yang akan otomatis terisi saat memilih proses ini')
+                                            ->required(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->visible(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->createOptionUsing(function (array $data) {
+                                        // Cek apakah proses dengan nama yang sama sudah ada
+                                        $existingProses = \App\Models\Proses::where('nama', $data['nama'])
+                                            ->where('produk_proses_kategori_id', 1)
+                                            ->first();
+                                        
+                                        if ($existingProses) {
+                                            // Jika sudah ada, update harga_default jika berbeda
+                                            if (isset($data['harga_default']) && $existingProses->harga_default != $data['harga_default']) {
+                                                $existingProses->update(['harga_default' => $data['harga_default']]);
+                                            }
+                                            return $existingProses->nama;
+                                        }
+                                        
+                                        // Jika belum ada, buat baru
+                                        $proses = \App\Models\Proses::create([
+                                            'nama' => $data['nama'],
+                                            'produk_proses_kategori_id' => 1, // Design
+                                            'harga_default' => $data['harga_default'] ?? null,
+                                        ]);
+                                        return $proses->nama;
+                                    })
+                                    ->placeholder('Ketik untuk mencari atau buat baru...')
+                                    ->helperText('Pilih dari daftar yang ada atau ketik nama baru untuk membuat proses baru')
                                     ->columnSpanFull(),
                                 Forms\Components\TextInput::make('harga')
                                     ->label('Harga Design')
@@ -119,9 +201,11 @@ class ProdukResource extends Resource
                                     ->required()
                                     ->mask(RawJs::make('$money($input)'))
                                     ->stripCharacters(',')
+                                    ->helperText('Harga bisa di-custom sesuai kebutuhan produk ini')
                                     ->columnSpanFull(),
                             ])
                             ->itemLabel(fn (array $state): ?string => $state['nama'] ?? 'Design Baru')
+                            ->helperText('Jika produk tidak memerlukan opsi design, kosongkan saja bagian ini.')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                 $data['produk_proses_kategori_id'] = 1; // Design
                                 $data['urutan'] = 0; // Design selalu di awal
@@ -177,10 +261,90 @@ class ProdukResource extends Resource
                                     ->default(1), // Produksi
                                 Forms\Components\Hidden::make('urutan')
                                     ->default(1),
-                                Forms\Components\TextInput::make('nama')
+                                Forms\Components\Hidden::make('proses_id'),
+                                Forms\Components\Select::make('nama')
                                     ->label('Nama Proses')
                                     ->required()
-                                    ->maxLength(255)
+                                    ->searchable()
+                                    ->getSearchResultsUsing(function (string $search) {
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', 2)
+                                            ->where('nama', 'like', "%{$search}%")
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(fn ($proses) => [
+                                                $proses->nama => $proses->nama
+                                            ]);
+                                    })
+                                    ->getOptionLabelUsing(fn ($value) => $value)
+                                    ->live()
+                                    ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                        // Cari proses master dan link-kan
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 2)
+                                            ->where('nama', $state)
+                                            ->first();
+                                        if ($proses) {
+                                            $set('proses_id', $proses->id);
+                                        } else {
+                                            $set('proses_id', null);
+                                        }
+                                    })
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('nama')
+                                            ->label('Nama Proses Baru')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->columnSpanFull(),
+                                        Forms\Components\ToggleButtons::make('perlu_harga')
+                                            ->label('Apakah perlu harga default?')
+                                            ->options([
+                                                true => 'Ya',
+                                                false => 'Tidak',
+                                            ])
+                                            ->colors([
+                                                true => 'success',
+                                                false => 'danger',
+                                            ])
+                                            ->default(false)
+                                            ->grouped()
+                                            ->live()
+                                            ->helperText('Biasanya proses produksi tidak perlu harga default')
+                                            ->columnSpanFull(),
+                                        Forms\Components\TextInput::make('harga_default')
+                                            ->label('Harga Default')
+                                            ->numeric()
+                                            ->prefix('Rp')
+                                            ->minValue(0)
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(',')
+                                            ->helperText('Harga default yang akan otomatis terisi saat memilih proses ini')
+                                            ->required(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->visible(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->createOptionUsing(function (array $data) {
+                                        // Cek apakah proses dengan nama yang sama sudah ada
+                                        $existingProses = \App\Models\Proses::where('nama', $data['nama'])
+                                            ->where('produk_proses_kategori_id', 2)
+                                            ->first();
+                                        
+                                        if ($existingProses) {
+                                            // Jika sudah ada, update harga_default jika berbeda
+                                            if (isset($data['harga_default']) && $existingProses->harga_default != $data['harga_default']) {
+                                                $existingProses->update(['harga_default' => $data['harga_default']]);
+                                            }
+                                            return $existingProses->nama;
+                                        }
+                                        
+                                        // Jika belum ada, buat baru
+                                        $proses = \App\Models\Proses::create([
+                                            'nama' => $data['nama'],
+                                            'produk_proses_kategori_id' => 2, // Produksi
+                                            'harga_default' => $data['harga_default'] ?? null,
+                                        ]);
+                                        return $proses->nama;
+                                    })
+                                    ->placeholder('Ketik untuk mencari atau buat baru...')
+                                    ->helperText('Pilih dari daftar yang ada atau ketik nama baru')
                                     ->columnSpanFull(),
                                 Forms\Components\Select::make('mesin_id')
                                     ->label('Mesin')
@@ -189,20 +353,29 @@ class ProdukResource extends Resource
                                     ->preload()
                                     ->required()
                                     ->columnSpanFull(),
+                                Forms\Components\ToggleButtons::make('apakah_mengurangi_bahan')
+                                    ->label('Apakah mengurangi bahan?')
+                                    ->options([
+                                        true => 'Ya',
+                                        false => 'Tidak',
+                                    ])
+                                    ->colors([
+                                        true => 'success',
+                                        false => 'danger',
+                                    ])
+                                    ->default(false)
+                                    ->grouped()
+                                    ->required()
+                                    ->live()
+                                    ->columnSpanFull(),
                                 Forms\Components\Repeater::make('produkProsesBahans')
                                     ->label('Set Bahan yang Dipakai')
                                     ->relationship('produkProsesBahans')
+                                    ->visible(fn (Forms\Get $get): bool => $get('apakah_mengurangi_bahan'))
+                                    ->required(fn (Forms\Get $get): bool => $get('apakah_mengurangi_bahan'))
                                     ->defaultItems(function (Forms\Get $get) {
-                                        // Cek apakah ada item dengan toggle aktif
-                                        $items = $get('produkProsesBahans') ?? [];
-                                        if (is_array($items)) {
-                                            foreach ($items as $item) {
-                                                if (isset($item['apakah_dipengaruhi_oleh_dimensi']) && $item['apakah_dipengaruhi_oleh_dimensi']) {
-                                                    return 1;
-                                                }
-                                            }
-                                        }
-                                        return 0;
+                                        // Jika apakah_mengurangi_bahan aktif, set defaultItems menjadi 1
+                                        return $get('apakah_mengurangi_bahan') ? 1 : 0;
                                     })
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
@@ -339,13 +512,96 @@ class ProdukResource extends Resource
                             ->relationship('produkProses', function ($query) {
                                 return $query->where('produk_proses_kategori_id', 3); // Finishing
                             })
+                            ->defaultItems(0)
                             ->schema([
                                 Forms\Components\Hidden::make('produk_proses_kategori_id')
                                     ->default(2), // Finishing
-                                Forms\Components\TextInput::make('nama')
+                                Forms\Components\Hidden::make('proses_id'),
+                                Forms\Components\Select::make('nama')
                                     ->label('Nama Addon')
                                     ->required()
-                                    ->maxLength(255)
+                                    ->searchable()
+                                    ->getSearchResultsUsing(function (string $search) {
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', 3)
+                                            ->where('nama', 'like', "%{$search}%")
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(fn ($proses) => [
+                                                $proses->nama => $proses->nama . ($proses->harga_default ? ' (Default: ' . formatRupiah($proses->harga_default) . ')' : '')
+                                            ]);
+                                    })
+                                    ->getOptionLabelUsing(fn ($value) => $value)
+                                    ->live()
+                                    ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                        // Cari proses master dan isi harga default jika ada
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 3)
+                                            ->where('nama', $state)
+                                            ->first();
+                                        if ($proses) {
+                                            $set('proses_id', $proses->id);
+                                            if ($proses->harga_default) {
+                                                $set('harga', $proses->harga_default);
+                                            }
+                                        } else {
+                                            $set('proses_id', null);
+                                        }
+                                    })
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('nama')
+                                            ->label('Nama Addon Baru')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->columnSpanFull(),
+                                        Forms\Components\ToggleButtons::make('perlu_harga')
+                                            ->label('Apakah perlu harga default?')
+                                            ->options([
+                                                true => 'Ya',
+                                                false => 'Tidak',
+                                            ])
+                                            ->colors([
+                                                true => 'success',
+                                                false => 'danger',
+                                            ])
+                                            ->default(false)
+                                            ->grouped()
+                                            ->live()
+                                            ->columnSpanFull(),
+                                        Forms\Components\TextInput::make('harga_default')
+                                            ->label('Harga Default')
+                                            ->numeric()
+                                            ->prefix('Rp')
+                                            ->minValue(0)
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(',')
+                                            ->helperText('Harga default yang akan otomatis terisi saat memilih proses ini')
+                                            ->required(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->visible(fn (Forms\Get $get): bool => (bool) $get('perlu_harga'))
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->createOptionUsing(function (array $data) {
+                                        // Cek apakah proses dengan nama yang sama sudah ada
+                                        $existingProses = \App\Models\Proses::where('nama', $data['nama'])
+                                            ->where('produk_proses_kategori_id', 3)
+                                            ->first();
+                                        
+                                        if ($existingProses) {
+                                            // Jika sudah ada, update harga_default jika berbeda
+                                            if (isset($data['harga_default']) && $existingProses->harga_default != $data['harga_default']) {
+                                                $existingProses->update(['harga_default' => $data['harga_default']]);
+                                            }
+                                            return $existingProses->nama;
+                                        }
+                                        
+                                        // Jika belum ada, buat baru
+                                        $proses = \App\Models\Proses::create([
+                                            'nama' => $data['nama'],
+                                            'produk_proses_kategori_id' => 3, // Finishing
+                                            'harga_default' => $data['harga_default'] ?? null,
+                                        ]);
+                                        return $proses->nama;
+                                    })
+                                    ->placeholder('Ketik untuk mencari atau buat baru...')
+                                    ->helperText('Pilih dari daftar yang ada atau ketik nama baru')
                                     ->columnSpanFull(),
                                 Forms\Components\TextInput::make('harga')
                                     ->label('Harga Addon')
@@ -356,6 +612,7 @@ class ProdukResource extends Resource
                                     ->required()
                                     ->mask(RawJs::make('$money($input)'))
                                     ->stripCharacters(',')
+                                    ->helperText('Harga bisa di-custom sesuai kebutuhan produk ini')
                                     ->columnSpanFull(),
                                 Forms\Components\Select::make('mesin_id')
                                     ->label('Mesin')
@@ -450,6 +707,7 @@ class ProdukResource extends Resource
                                     ),
                             ])
                             ->itemLabel(fn (array $state): ?string => $state['nama'] ?? 'Addon Baru')
+                            ->helperText('Jika produk tidak memerlukan finishing/addon, kosongkan saja bagian ini.')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                 $data['produk_proses_kategori_id'] = 3; // Finishing
                                 return $data;

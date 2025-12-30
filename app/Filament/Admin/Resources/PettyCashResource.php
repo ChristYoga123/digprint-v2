@@ -85,6 +85,12 @@ class PettyCashResource extends Resource
                     ->money('IDR')
                     ->sortable()
                     ->default('-'),
+                Tables\Columns\TextColumn::make('link_bukti_transfer')
+                    ->label('Bukti Transfer')
+                    ->url(fn ($record) => $record->link_bukti_transfer, shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-link')
+                    ->default('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
                     ->badge(StatusEnum::class)
                     ->sortable(),
@@ -276,7 +282,7 @@ class PettyCashResource extends Resource
                     )
                     ->form([
                         Forms\Components\TextInput::make('uang_tutup')
-                            ->label('Uang Tutup Toko')
+                            ->label('Total Uang Saat Tutup Toko')
                             ->required()
                             ->numeric()
                             ->prefix('Rp')
@@ -290,8 +296,14 @@ class PettyCashResource extends Resource
                             )
                             ->helperText(fn ($record) => $record && $record->alasan_penolakan_tutup 
                                 ? new \Illuminate\Support\HtmlString('<span style="color: red;">Alasan penolakan sebelumnya: ' . $record->alasan_penolakan_tutup . '</span>')
-                                : null
+                                : 'Total uang fisik saat tutup toko'
                             )
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('link_bukti_transfer')
+                            ->label('Link Bukti Transfer / Drive Collection')
+                            ->url()
+                            ->placeholder('https://drive.google.com/...')
+                            ->helperText('Opsional. Masukkan link Google Drive atau folder bukti transfer jika ada pembayaran via transfer')
                             ->columnSpanFull(),
                         Forms\Components\Textarea::make('keterangan_tutup')
                             ->label('Keterangan')
@@ -312,6 +324,7 @@ class PettyCashResource extends Resource
                             'status' => StatusEnum::TUTUP->value,
                             'user_id_tutup' => Auth::id(),
                             'uang_tutup' => $data['uang_tutup'],
+                            'link_bukti_transfer' => $data['link_bukti_transfer'] ?? null,
                             'keterangan_tutup' => $data['keterangan_tutup'] ?? null,
                         ]);
                         

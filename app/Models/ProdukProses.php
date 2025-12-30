@@ -32,4 +32,9 @@ class ProdukProses extends Model
     {
         return $this->belongsTo(Mesin::class);
     }
+
+    public function proses()
+    {
+        return $this->belongsTo(Proses::class);
+    }
 }
