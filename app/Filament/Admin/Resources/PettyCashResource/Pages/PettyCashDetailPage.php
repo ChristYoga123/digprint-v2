@@ -98,6 +98,15 @@ class PettyCashDetailPage extends Page
                                     ->columnSpanFull()
                                     ->default('-')
                                     ->visible(fn (PettyCash $record) => $record->keterangan_tutup !== null),
+                                TextEntry::make('link_bukti_transfer')
+                                    ->label('Link Bukti Transfer')
+                                    ->columnSpanFull()
+                                    ->getStateUsing(fn (PettyCash $record) => "Klik untuk melihat")
+                                    ->color('info')
+                                    ->default('-')
+                                    ->visible(fn (PettyCash $record) => $record->link_bukti_transfer !== null)
+                                    ->url(fn (PettyCash $record) => $record->link_bukti_transfer)
+                                    ->openUrlInNewTab(),
                             ]),
                         Section::make('Summary')
                             ->schema([
@@ -297,7 +306,7 @@ class PettyCashDetailPage extends Page
                         Section::make('Transaksi Cash')
                             ->description('Daftar transaksi yang dibayar dengan cash pada tanggal ini')
                             ->schema([
-                                Livewire::make(TransaksiTable::class, ['session' => $this->record]),
+                                Livewire::make(TransaksiTable::class, ['pettyCash' => $this->record]),
                             ])
                             ->columnSpanFull()
                             ->collapsible(),
