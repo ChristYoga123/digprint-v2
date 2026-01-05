@@ -84,6 +84,96 @@ class ProdukResource extends Resource
                                         }
                                     }
                                 })
+                                ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                    // Jika perlu proses diaktifkan, matikan langsung selesai
+                                    if ($state) {
+                                        $set('apakah_langsung_selesai', false);
+                                    }
+                                })
+                                ->columnSpanFull(),
+                            Forms\Components\ToggleButtons::make('apakah_langsung_selesai')
+                                ->label('Apakah langsung selesai?')
+                                ->options([
+                                    true => 'Ya',
+                                    false => 'Tidak',
+                                ])
+                                ->colors([
+                                    true => 'success',
+                                    false => 'danger',
+                                ])
+                                ->default(false)
+                                ->grouped()
+                                ->required()
+                                ->live()
+                                ->helperText('Aktifkan untuk produk yang langsung selesai tanpa proses (contoh: fotocopy)')
+                                ->visible(fn (Forms\Get $get): bool => !(bool) $get('apakah_perlu_proses'))
+                                ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                    // Jika langsung selesai diaktifkan, matikan perlu proses
+                                    if ($state) {
+                                        $set('apakah_perlu_proses', false);
+                                    }
+                                })
+                                ->columnSpanFull(),
+                            Forms\Components\Section::make('Penggunaan Bahan')
+                                ->description('Tentukan bahan yang digunakan untuk produk yang langsung selesai')
+                                ->visible(fn (Forms\Get $get): bool => (bool) $get('apakah_langsung_selesai'))
+                                ->schema([
+                                    Forms\Components\Repeater::make('produkBahans')
+                                        ->label('Bahan yang Digunakan')
+                                        ->relationship('produkBahans')
+                                        ->defaultItems(1)
+                                        ->schema([
+                                            Forms\Components\Select::make('bahan_id')
+                                                ->label('Bahan')
+                                                ->options(function () {
+                                                    return \App\Models\Bahan::query()
+                                                        ->get()
+                                                        ->mapWithKeys(function ($bahan) {
+                                                            return [$bahan->id => "{$bahan->kode} - {$bahan->nama}"];
+                                                        });
+                                                })
+                                                ->searchable()
+                                                ->preload()
+                                                ->required()
+                                                ->columnSpanFull(),
+                                            Forms\Components\ToggleButtons::make('apakah_dipengaruhi_oleh_dimensi')
+                                                ->label('Apakah dipengaruhi oleh custom dimensi?')
+                                                ->options([
+                                                    true => 'Ya',
+                                                    false => 'Tidak',
+                                                ])
+                                                ->colors([
+                                                    true => 'success',
+                                                    false => 'danger',
+                                                ])
+                                                ->default(false)
+                                                ->grouped()
+                                                ->required()
+                                                ->live()
+                                                ->afterStateUpdated(function (Forms\Set $set, $state) {
+                                                    if ($state) {
+                                                        $set('jumlah', 0);
+                                                    }
+                                                })
+                                                ->columnSpanFull(),
+                                            Forms\Components\TextInput::make('jumlah')
+                                                ->label('Jumlah Bahan yang dipakai')
+                                                ->numeric()
+                                                ->minValue(0)
+                                                ->default(0)
+                                                ->required(fn (Forms\Get $get): bool => !$get('apakah_dipengaruhi_oleh_dimensi'))
+                                                ->visible(fn (Forms\Get $get): bool => !$get('apakah_dipengaruhi_oleh_dimensi'))
+                                                ->mask(RawJs::make('$money($input)'))
+                                                ->stripCharacters(',')
+                                                ->columnSpanFull(),
+                                        ])
+                                        ->columnSpanFull()
+                                        ->itemLabel(fn (array $state): ?string => 
+                                            isset($state['bahan_id']) 
+                                                ? Bahan::find($state['bahan_id'])?->nama 
+                                                : null
+                                        ),
+                                ])
                                 ->columnSpanFull(),
                         ]),
                     Forms\Components\Wizard\Step::make('Pra Produksi (Design)')

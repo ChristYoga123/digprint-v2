@@ -13,6 +13,11 @@ class ProdukProsesBahan extends Model
         return $this->belongsTo(ProdukProses::class);
     }
 
+    public function produk()
+    {
+        return $this->belongsTo(Produk::class);
+    }
+
     public function bahan()
     {
         return $this->belongsTo(Bahan::class);

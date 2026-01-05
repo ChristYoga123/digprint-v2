@@ -113,6 +113,31 @@ class PraProduksiResource extends Resource
                 //
             ])
             ->actions([
+                Action::make('mulai_pengerjaan')
+                    ->label('Mulai Pengerjaan')
+                    ->icon('heroicon-o-play')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Mulai Pengerjaan Design')
+                    ->modalDescription('Mulai proses design untuk transaksi ini?')
+                    ->visible(function(TransaksiProduk $record) {
+                        $designProses = $record->transaksiProses->where('urutan', 1)->first();
+                        return $designProses && $designProses->status_proses === StatusProsesEnum::BELUM;
+                    })
+                    ->action(function(TransaksiProduk $record) {
+                        $designProses = $record->transaksiProses->where('urutan', 1)->first();
+                        if ($designProses) {
+                            $designProses->update(['status_proses' => StatusProsesEnum::DALAM_PROSES->value]);
+                            $record->refreshStatus();
+                            $record->transaksi->updateStatusFromProduks();
+                            
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body('Pengerjaan design dimulai')
+                                ->success()
+                                ->send();
+                        }
+                    }),
                 Action::make('approve_design')
                     ->label('Approve Design')
                     ->icon('heroicon-o-check-circle')
@@ -128,9 +153,11 @@ class PraProduksiResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->visible(function(TransaksiProduk $record) {
-                        // Hidden jika proses adalah subjoin
+                        // Hidden jika proses adalah subjoin atau belum dimulai
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses && !$designProses->apakah_menggunakan_subjoin;
+                        return $designProses 
+                            && !$designProses->apakah_menggunakan_subjoin
+                            && $designProses->status_proses === StatusProsesEnum::DALAM_PROSES; // Hanya tampil jika sedang diproses
                     })
                     ->action(function(TransaksiProduk $record, array $data) {
                         try {
@@ -154,12 +181,9 @@ class PraProduksiResource extends Resource
                                 'design' => $data['design'],
                             ]);
 
-                            // Update status transaksi menjadi PRODUKSI jika masih BELUM
-                            if ($record->transaksi->status_transaksi === StatusTransaksiEnum::BELUM) {
-                                $record->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::PRODUKSI->value,
-                                ]);
-                            }
+                            // Update status transaksi dengan method baru
+                            $record->refreshStatus();
+                            $record->transaksi->updateStatusFromProduks();
 
                             Notification::make()
                                 ->title('Berhasil')

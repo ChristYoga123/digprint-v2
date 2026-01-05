@@ -142,6 +142,42 @@ class FinishingResource extends Resource
                 //
             ])
             ->actions([
+                Actions\Action::make('mulai_finishing')
+                    ->label('Mulai Finishing')
+                    ->icon('heroicon-o-play')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Mulai Finishing')
+                    ->modalDescription('Mulai semua proses finishing/addon untuk produk ini?')
+                    ->visible(function(TransaksiProduk $record) {
+                        // Cek apakah ada proses finishing yang masih BELUM
+                        return $record->transaksiProses
+                            ->contains(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && !$tp->apakah_menggunakan_subjoin
+                            );
+                    })
+                    ->action(function(TransaksiProduk $record) {
+                        // Update semua proses finishing yang BELUM menjadi DALAM_PROSES
+                        $record->transaksiProses
+                            ->where('produkProses.produk_proses_kategori_id', 3)
+                            ->where('status_proses', StatusProsesEnum::BELUM->value)
+                            ->each(function($tp) {
+                                if (!$tp->apakah_menggunakan_subjoin) {
+                                    $tp->update(['status_proses' => StatusProsesEnum::DALAM_PROSES->value]);
+                                }
+                            });
+                        
+                        $record->refreshStatus();
+                        $record->transaksi->updateStatusFromProduks();
+                        
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Proses finishing dimulai')
+                            ->success()
+                            ->send();
+                    }),
                 Actions\Action::make('kirim_sample')
                     ->label(function(TransaksiProduk $record) {
                         // Ambil proses addon yang perlu sample approval
@@ -170,13 +206,13 @@ class FinishingResource extends Resource
                     })
                     ->modalSubmitActionLabel('Kirim Sample')
                     ->visible(function(TransaksiProduk $record) {
-                        // Tampilkan jika ada proses addon yang perlu sample approval
+                        // Tampilkan jika ada proses addon yang perlu sample approval DAN sudah dimulai
                         return $record->transaksiProses
                             ->contains(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->apakah_perlu_sample_approval
                                 && $tp->produkProses?->apakah_mengurangi_bahan
-                                && $tp->status_proses != StatusProsesEnum::SELESAI
+                                && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             );
                     })
@@ -218,20 +254,21 @@ class FinishingResource extends Resource
                     ->modalDescription('Pilih addon/finishing yang sudah selesai dikerjakan')
                     ->visible(function(TransaksiProduk $record) {
                         // Hidden jika semua proses addon adalah subjoin
+                        // Dan hanya tampilkan jika ada yang sudah dimulai (DALAM_PROSES)
                         $nonSubjoinAddons = $record->transaksiProses
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
-                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             );
                         return $nonSubjoinAddons->isNotEmpty();
                     })
                     ->form(function(TransaksiProduk $record) {
-                        // Hanya tampilkan addon yang bukan subjoin
+                        // Hanya tampilkan addon yang bukan subjoin dan sudah dimulai (DALAM_PROSES)
                         $addonOptions = $record->transaksiProses
                             ->filter(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
-                                && $tp->status_proses === StatusProsesEnum::BELUM
+                                && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             )
                             ->mapWithKeys(fn($tp) => [$tp->id => $tp->produkProses->nama])
@@ -375,22 +412,18 @@ class FinishingResource extends Resource
                                 }
                             }
 
-                            // Cek apakah semua proses (termasuk addon) sudah selesai
-                            $allProcessesComplete = $record->transaksiProses
-                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
-
-                            if ($allProcessesComplete) {
-                                // Update status transaksi menjadi SELESAI
-                                $record->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
-                                ]);
-                            }
+                            // Update status produk dan transaksi
+                            $record->refreshStatus();
+                            $record->transaksi->updateStatusFromProduks();
+                            
+                            $statusProduk = $record->fresh()->status;
+                            $ready = $statusProduk === \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL;
 
                             DB::commit();
 
                             Notification::make()
                                 ->title('Berhasil')
-                                ->body('Finishing/addon berhasil diselesaikan' . ($allProcessesComplete ? '. Transaksi sudah selesai!' : ''))
+                                ->body('Finishing/addon berhasil diselesaikan' . ($ready ? '. Pesanan Siap Diambil!' : ''))
                                 ->success()
                                 ->send();
 

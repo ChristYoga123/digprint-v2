@@ -57,6 +57,27 @@ class TransaksiDetailPage extends Page implements HasTable
                     ->label('Nama')
                     ->sortable()
                     ->description(fn(TransaksiProduk $record) => 'Jumlah: ' . $record->jumlah . ' pesanan'),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->getStateUsing(fn(TransaksiProduk $record) => $record->getStatusProses())
+                    ->color(fn(string $state): string => match ($state) {
+                        'Selesai' => 'success',
+                        'Siap Diambil' => 'success',
+                        'Belum Dimulai' => 'gray',
+                        default => 'info',
+                    })
+                    ->icon(fn(string $state): string => match ($state) {
+                        'Selesai' => 'heroicon-o-check-circle',
+                        'Siap Diambil' => 'heroicon-o-check',
+                        'Pra Produksi' => 'heroicon-o-paint-brush',
+                        'Produksi' => 'heroicon-o-cog',
+                        'Finishing' => 'heroicon-o-scissors',
+                        'Dalam Proses' => 'heroicon-o-clock',
+                        'Belum Dimulai' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->sortable(false),
                 TextColumn::make('total_harga_produk_setelah_diskon')
                     ->label('Total Harga')
                     ->money('IDR')
@@ -64,12 +85,34 @@ class TransaksiDetailPage extends Page implements HasTable
                     ->weight('bold'),
             ])
             ->actions([
+                Action::make('pesanan_diambil')
+                    ->label('Pesanan Diambil')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Pesanan Diambil')
+                    ->modalDescription('Apakah pesanan ini sudah diambil oleh customer?')
+                    ->visible(fn(TransaksiProduk $record) => $record->status === \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL)
+                    ->action(function(TransaksiProduk $record) {
+                        $record->update(['status' => \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI]);
+                        $record->transaksi->updateStatusFromProduks();
+                        
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Status pesanan diupdate menjadi Selesai')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('print_spk')
                     ->label('Print SPK')
                     ->icon('heroicon-o-printer')
                     ->color('warning')
                     ->url(fn(TransaksiProduk $record) => route('print.spk', ['transaksi_produk_id' => $record->id]))
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    ->visible(fn(TransaksiProduk $record) => !in_array($record->status, [
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL,
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI
+                    ])),
                 Action::make('lihat_subjoin')
                     ->label('Lihat Subjoin')
                     ->icon('heroicon-o-eye')
@@ -77,11 +120,19 @@ class TransaksiDetailPage extends Page implements HasTable
                     ->infolist(fn(TransaksiProduk $record) => [
                         Livewire::make(TransaksiSubjoinTable::class, ['produk' => $record])
                     ])
-                    ->modalHeading('Lihat Rencana Subjoin'),
+                    ->modalHeading('Lihat Rencana Subjoin')
+                    ->visible(fn(TransaksiProduk $record) => !in_array($record->status, [
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL,
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI
+                    ])),
                 Action::make('set_subjoin')
                     ->label('Set Rencana Subjoin')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
+                    ->visible(fn(TransaksiProduk $record) => !in_array($record->status, [
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL,
+                        \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI
+                    ]))
                     ->form(function(TransaksiProduk $record) {
                         return [
                             Grid::make(2)

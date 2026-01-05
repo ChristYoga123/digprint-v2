@@ -165,6 +165,25 @@ class ProduksiResource extends Resource
                     ->color('info')
                     ->url(fn(TransaksiProses $record) => $record->transaksiProduk->transaksi->design)
                     ->openUrlInNewTab(),
+                Actions\Action::make('mulai_produksi')
+                    ->label('Mulai Produksi')
+                    ->icon('heroicon-o-play')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Mulai Produksi')
+                    ->modalDescription('Mulai proses produksi ini?')
+                    ->visible(fn(TransaksiProses $record) => $record->status_proses === StatusProsesEnum::BELUM && !$record->apakah_menggunakan_subjoin)
+                    ->action(function(TransaksiProses $record) {
+                        $record->update(['status_proses' => StatusProsesEnum::DALAM_PROSES->value]);
+                        $record->transaksiProduk->refreshStatus();
+                        $record->transaksiProduk->transaksi->updateStatusFromProduks();
+                        
+                        Notification::make()
+                            ->title('Berhasil')
+                            ->body('Proses produksi dimulai')
+                            ->success()
+                            ->send();
+                    }),
                 Actions\Action::make('kirim_sample')
                     ->label(fn(TransaksiProses $record) => 'Sample (' . ($record->jumlah_sample ?? 0) . ')')
                     ->icon('heroicon-o-paper-airplane')
@@ -176,7 +195,7 @@ class ProduksiResource extends Resource
                     ->visible(function(TransaksiProses $record) {
                         return $record->apakah_perlu_sample_approval 
                             && $record->produkProses?->apakah_mengurangi_bahan
-                            && $record->status_proses != StatusProsesEnum::SELESAI
+                            && $record->status_proses === StatusProsesEnum::DALAM_PROSES
                             && !$record->apakah_menggunakan_subjoin;
                     })
                     ->action(function(TransaksiProses $record) {
@@ -200,7 +219,7 @@ class ProduksiResource extends Resource
                     ->label('Kloter')
                     ->icon('heroicon-o-plus')
                     ->color('warning')
-                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->apakah_menggunakan_subjoin)
+                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES)
                     ->form([
                         Select::make('kloter_id')
                             ->label('Pilih Kloter')
@@ -246,7 +265,7 @@ class ProduksiResource extends Resource
                         }
                         return $desc;
                     })
-                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin)
+                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES)
                     ->form([
                         Toggle::make('ada_helper')
                             ->label('Ada teman yang membantu?')
@@ -385,16 +404,8 @@ class ProduksiResource extends Resource
                             $transaksiProduk = $record->transaksiProduk;
                             $transaksiProduk->load('transaksiProses');
 
-                            // Cek apakah semua proses transaksi sudah selesai
-                            $allProcessesComplete = $transaksiProduk->transaksiProses
-                                ->every(fn($tp) => $tp->status_proses === StatusProsesEnum::SELESAI);
-
-                            if ($allProcessesComplete) {
-                                // Update status transaksi menjadi SELESAI
-                                $transaksiProduk->transaksi->update([
-                                    'status_transaksi' => StatusTransaksiEnum::SELESAI->value,
-                                ]);
-                            }
+                            // Update status transaksi berdasarkan semua produk
+                            $transaksiProduk->transaksi->updateStatusFromProduks();
 
                             // Jika ini proses dalam kloter, cek apakah semua proses dalam kloter sudah selesai
                             if ($record->kloter_id) {
@@ -411,6 +422,9 @@ class ProduksiResource extends Resource
                                     ]);
                                 }
                             }
+                            
+                            $record->transaksiProduk->refreshStatus();
+                            $record->transaksiProduk->transaksi->updateStatusFromProduks();
 
                             DB::commit();
 

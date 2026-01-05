@@ -18,6 +18,11 @@ class Produk extends Model
         return $this->hasManyThrough(Bahan::class, ProdukProsesBahan::class);
     }
 
+    public function produkBahans()
+    {
+        return $this->hasMany(ProdukProsesBahan::class);
+    }
+
     public function produkHargas()
     {
         return $this->hasMany(ProdukHarga::class);

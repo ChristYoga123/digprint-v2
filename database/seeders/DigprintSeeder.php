@@ -105,11 +105,32 @@ class DigprintSeeder extends Seeder
                     'is_active' => true,
                     'is_pkp' => true,
                     'npwp' => '01.234.567.8-901.000',
-                    'is_po' => true,
+                    'is_po' => true, // Supplier dengan PO
                 ]
             );
 
-            // 5. Bahan
+            $supplier2 = Supplier::firstOrCreate(
+                ['kode' => generateKode('SUP')],
+                [
+                    'nama_perusahaan' => 'Toko Tinta Jaya',
+                    'nama_sales' => 'Budi Santoso',
+                    'no_hp_sales' => '081234567895',
+                    'alamat_perusahaan' => 'Jl. Raya Jakarta No. 50, Jakarta',
+                    'alamat_gudang' => 'Jl. Raya Jakarta No. 50, Jakarta',
+                    'metode_pembayaran1' => 'Cash',
+                    'nomor_rekening1' => '',
+                    'nama_rekening1' => '',
+                    'metode_pembayaran2' => '', // String kosong karena kolom not null
+                    'nomor_rekening2' => '',
+                    'nama_rekening2' => '',
+                    'is_active' => true,
+                    'is_pkp' => false,
+                    'npwp' => '',
+                    'is_po' => false, // Supplier tanpa PO (langsung bayar)
+                ]
+            );
+
+            // 5. Bahan (disederhanakan menjadi 2 saja)
             $bahanKertasA4 = Bahan::firstOrCreate(
                 ['kode' => 'BHN-KRT001'],
                 [
@@ -121,36 +142,14 @@ class DigprintSeeder extends Seeder
                 ]
             );
 
-            $bahanTintaHitam = Bahan::firstOrCreate(
+            $bahanTinta = Bahan::firstOrCreate(
                 ['kode' => 'BHN-TNT001'],
                 [
-                    'nama' => 'Tinta Hitam',
+                    'nama' => 'Tinta Printer',
                     'satuan_terbesar_id' => $satuanLiter->id,
                     'satuan_terkecil_id' => $satuanLiter->id,
                     'stok_minimal' => 10,
-                    'keterangan' => 'Tinta hitam untuk printer',
-                ]
-            );
-
-            $bahanTintaWarna = Bahan::firstOrCreate(
-                ['kode' => 'BHN-TNT002'],
-                [
-                    'nama' => 'Tinta Warna',
-                    'satuan_terbesar_id' => $satuanLiter->id,
-                    'satuan_terkecil_id' => $satuanLiter->id,
-                    'stok_minimal' => 5,
-                    'keterangan' => 'Tinta warna CMYK untuk printer',
-                ]
-            );
-
-            $bahanKertasKarton = Bahan::firstOrCreate(
-                ['kode' => 'BHN-KRT002'],
-                [
-                    'nama' => 'Kertas Karton 250gsm',
-                    'satuan_terbesar_id' => $satuanRim->id,
-                    'satuan_terkecil_id' => $satuanPcs->id,
-                    'stok_minimal' => 10,
-                    'keterangan' => 'Kertas karton untuk kartu nama dan undangan',
+                    'keterangan' => 'Tinta untuk printer',
                 ]
             );
 
@@ -321,7 +320,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkKartuNamaProses1->id,
-                    'bahan_id' => $bahanKertasKarton->id,
+                    'bahan_id' => $bahanKertasA4->id,
                 ],
                 [
                     'jumlah' => 0, // Dipengaruhi dimensi
@@ -332,7 +331,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkKartuNamaProses1->id,
-                    'bahan_id' => $bahanTintaHitam->id,
+                    'bahan_id' => $bahanTinta->id,
                 ],
                 [
                     'jumlah' => 10, // Fixed, tidak dipengaruhi dimensi
@@ -433,7 +432,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkUndanganProses1->id,
-                    'bahan_id' => $bahanKertasKarton->id,
+                    'bahan_id' => $bahanKertasA4->id,
                 ],
                 [
                     'jumlah' => 0, // Dipengaruhi dimensi
@@ -444,7 +443,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkUndanganProses1->id,
-                    'bahan_id' => $bahanTintaWarna->id,
+                    'bahan_id' => $bahanTinta->id,
                 ],
                 [
                     'jumlah' => 20, // Fixed
@@ -529,7 +528,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkBrosurProses1->id,
-                    'bahan_id' => $bahanTintaWarna->id,
+                    'bahan_id' => $bahanTinta->id,
                 ],
                 [
                     'jumlah' => 15, // Fixed
@@ -584,7 +583,7 @@ class DigprintSeeder extends Seeder
             ProdukProsesBahan::firstOrCreate(
                 [
                     'produk_proses_id' => $produkFlyerProses1->id,
-                    'bahan_id' => $bahanTintaWarna->id,
+                    'bahan_id' => $bahanTinta->id,
                 ],
                 [
                     'jumlah' => 12, // Fixed
@@ -733,9 +732,7 @@ class DigprintSeeder extends Seeder
             // Buat beberapa batch per bahan dengan tanggal berbeda
             $bahanList = [
                 $bahanKertasA4,
-                $bahanTintaHitam,
-                $bahanTintaWarna,
-                $bahanKertasKarton,
+                $bahanTinta,
             ];
 
             foreach ($bahanList as $bahan) {
@@ -795,21 +792,105 @@ class DigprintSeeder extends Seeder
                 }
             }
 
+            // 19. Produk Fotocopy (Langsung Selesai - contoh produk tanpa proses)
+            $produkFotocopy = Produk::firstOrCreate(
+                ['kode' => 'PRD-FOTOCOPY'],
+                [
+                    'nama' => 'Fotocopy A4',
+                    'apakah_perlu_custom_dimensi' => false,
+                    'apakah_perlu_proses' => false,
+                    'apakah_langsung_selesai' => true,
+                ]
+            );
+
+            // 19.1 Bahan untuk Fotocopy (langsung terhubung ke produk, bukan proses)
+            ProdukProsesBahan::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'produk_proses_id' => null, // Null karena langsung selesai
+                    'bahan_id' => $bahanKertasA4->id,
+                ],
+                [
+                    'jumlah' => 1, // 1 lembar per fotocopy
+                    'apakah_dipengaruhi_oleh_dimensi' => false,
+                ]
+            );
+
+            // 19.2 Harga Fotocopy (per kategori customer)
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriRetail->id,
+                    'jumlah_pesanan_minimal' => 1,
+                    'jumlah_pesanan_maksimal' => 100,
+                ],
+                ['harga' => 500] // Rp 500 per lembar
+            );
+
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriRetail->id,
+                    'jumlah_pesanan_minimal' => 101,
+                    'jumlah_pesanan_maksimal' => 1000,
+                ],
+                ['harga' => 400] // Rp 400 per lembar untuk bulk
+            );
+
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriCorporate->id,
+                    'jumlah_pesanan_minimal' => 1,
+                    'jumlah_pesanan_maksimal' => 100,
+                ],
+                ['harga' => 450]
+            );
+
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriCorporate->id,
+                    'jumlah_pesanan_minimal' => 101,
+                    'jumlah_pesanan_maksimal' => 1000,
+                ],
+                ['harga' => 350]
+            );
+
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriReseller->id,
+                    'jumlah_pesanan_minimal' => 1,
+                    'jumlah_pesanan_maksimal' => 100,
+                ],
+                ['harga' => 400]
+            );
+
+            ProdukHarga::firstOrCreate(
+                [
+                    'produk_id' => $produkFotocopy->id,
+                    'customer_kategori_id' => $kategoriReseller->id,
+                    'jumlah_pesanan_minimal' => 101,
+                    'jumlah_pesanan_maksimal' => 1000,
+                ],
+                ['harga' => 300]
+            );
+
             DB::commit();
 
             $this->command->info('Seeder berhasil dijalankan!');
             $this->command->info('Data yang dibuat:');
             $this->command->info('- 3 Customer Kategori');
             $this->command->info('- 3 Customer');
-            $this->command->info('- 1 Supplier');
-            $this->command->info('- 4 Bahan');
+            $this->command->info('- 2 Supplier (1 PO, 1 Non-PO)');
+            $this->command->info('- 2 Bahan (Kertas A4, Tinta)');
             $this->command->info('- 3 Proses Kategori');
             $this->command->info('- 13 Master Proses (Design, Produksi, Finishing)');
             $this->command->info('- 4 Mesin');
-            $this->command->info('- 18+ Produk Proses (Design, Produksi dengan mesin, Finishing tanpa mesin)');
-            $this->command->info('- 4 Produk');
-            $this->command->info('- 2 Operator Users dengan mesin assignment');
-            $this->command->info('- 12 Bahan Stok Batch (3 batch per bahan untuk testing FIFO)');
+            $this->command->info('- 5 Produk (4 dengan proses + 1 Fotocopy langsung selesai)');
+            $this->command->info('- 2 Operator Users');
+            $this->command->info('- 6 Bahan Stok Batch (3 batch per bahan untuk testing FIFO)');
 
         } catch (\Exception $e) {
             DB::rollBack();

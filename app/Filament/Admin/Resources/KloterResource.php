@@ -137,15 +137,27 @@ class KloterResource extends Resource
                     ->modalDescription(fn (Kloter $record) => 'Tandai kloter ' . $record->kode . ' sebagai selesai?')
                     ->action(function (Kloter $record) {
                         try {
+                            // Simpan ID produk yang terlibat sebelum update
+                            $transaksiProdukIds = $record->transaksiProses()->pluck('transaksi_produk_id')->unique();
+
+                            // Update Status Kloter
                             $record->update([
                                 'status' => KloterStatusEnum::SELESAI->value,
                                 'completed_by' => Auth::id(),
                                 'completed_at' => now(),
                             ]);
 
+                            // Update Status Proses
                             $record->transaksiProses()->update([
                                 'status_proses' => StatusProsesEnum::SELESAI,
                             ]);
+
+                            // Refresh status untuk setiap produk yang terlibat
+                            $produkList = \App\Models\TransaksiProduk::whereIn('id', $transaksiProdukIds)->get();
+                            foreach ($produkList as $produk) {
+                                $produk->refreshStatus();
+                                $produk->transaksi->updateStatusFromProduks();
+                            }
 
                             Notification::make()
                                 ->title('Berhasil')

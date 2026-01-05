@@ -2,34 +2,37 @@
 
 namespace App\Filament\Admin\Pages;
 
+use Filament\Forms;
+use App\Models\User;
+use App\Models\Bahan;
+use App\Models\Produk;
 use Filament\Pages\Page;
 use App\Models\Transaksi;
-use App\Models\TransaksiKalkulasi;
+use Filament\Tables\Table;
+use App\Models\BahanMutasi;
+use Filament\Support\RawJs;
+use App\Models\ProdukProses;
 use App\Models\TransaksiProduk;
 use App\Models\TransaksiProses;
-use App\Models\Produk;
-use App\Models\ProdukProses;
-use App\Models\PencatatanKeuangan;
 use App\Models\KaryawanPekerjaan;
-use Filament\Tables\Table;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Columns\TextColumn;
+use App\Models\PencatatanKeuangan;
+use App\Models\TransaksiKalkulasi;
+use Illuminate\Support\Facades\DB;
 use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\Auth;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
+use App\Enums\Transaksi\JenisDiskonEnum;
+use Filament\Notifications\Notification;
+use App\Enums\KaryawanPekerjaan\TipeEnum;
 use Illuminate\Contracts\Support\Htmlable;
+use App\Enums\Transaksi\StatusTransaksiEnum;
+use App\Enums\TransaksiProses\StatusProsesEnum;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Forms;
-use Filament\Support\RawJs;
-use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use App\Enums\Transaksi\StatusTransaksiEnum;
-use App\Enums\Transaksi\JenisDiskonEnum;
+use App\Enums\BahanMutasi\TipeEnum as MutasiTipeEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
-use App\Enums\TransaksiProses\StatusProsesEnum;
-use App\Enums\KaryawanPekerjaan\TipeEnum;
 
 class KasirPage extends Page implements HasTable, HasForms
 {
@@ -114,9 +117,11 @@ class KasirPage extends Page implements HasTable, HasForms
                                 // Jika LUNAS dipilih, set default jumlah bayar = total setelah diskon
                                 if ($state == StatusPembayaranEnum::LUNAS->value) {
                                     $this->jumlahBayar = (string) $this->getCartTotalAfterDiscount();
+                                    $this->tanggalPembayaran = now()->format('Y-m-d'); // Set tanggal pembayaran ke hari ini
                                 } else {
                                     // Jika TOP dipilih, reset jumlah bayar ke 0
                                     $this->jumlahBayar = '0';
+                                    $this->tanggalPembayaran = null; // Reset tanggal pembayaran
                                 }
                             }),
                         Forms\Components\Select::make('metodePembayaran')
@@ -538,6 +543,70 @@ class KasirPage extends Page implements HasTable, HasForms
                     'total_harga_produk_setelah_diskon' => $produkData['total_harga_produk_setelah_diskon'],
                 ]);
 
+                // Cek apakah produk langsung selesai, jika ya kurangi bahan otomatis
+                $produk = Produk::with('produkBahans.bahan')->find($produkData['produk_id']);
+                if ($produk && $produk->apakah_langsung_selesai) {
+                    // Loop through produkBahans dan kurangi stok
+                    foreach ($produk->produkBahans as $produkBahan) {
+                        if ($produkBahan->bahan_id && $produkBahan->jumlah > 0) {
+                            // Hitung jumlah bahan yang dikurangi
+                            $jumlahDikurangi = 0;
+                            
+                            if ($produkBahan->apakah_dipengaruhi_oleh_dimensi) {
+                                // Jika dipengaruhi dimensi, hitung berdasarkan panjang x lebar
+                                $panjang = $produkData['panjang'] ?? 0;
+                                $lebar = $produkData['lebar'] ?? 0;
+                                $luas = ceil(($panjang * $lebar) / 10000); // Convert cm² to m²
+                                $jumlahDikurangi = $luas * $produkData['jumlah'];
+                            } else {
+                                // Jika fixed, gunakan jumlah yang sudah ditentukan
+                                $jumlahDikurangi = $produkBahan->jumlah * $produkData['jumlah'];
+                            }
+                            
+                            // Cek stok tersedia
+                            $availableStok = \App\Models\BahanStokBatch::where('bahan_id', $produkBahan->bahan_id)
+                                ->where('jumlah_tersedia', '>', 0)
+                                ->sum('jumlah_tersedia');
+
+                            if ($availableStok < $jumlahDikurangi) {
+                                throw new \Exception("Stok bahan {$produkBahan->bahan->nama} tidak mencukupi. Tersedia: {$availableStok}, dibutuhkan: {$jumlahDikurangi}");
+                            }
+
+                            // Buat mutasi bahan
+                            $mutasi = BahanMutasi::create([
+                                'kode' => generateKode('BM'),
+                                'tipe' => MutasiTipeEnum::KELUAR,
+                                'bahan_id' => $produkBahan->bahan_id,
+                                'jumlah_mutasi' => $jumlahDikurangi, // Jumlah positif, tipe KELUAR menandakan pengurangan
+                                'keterangan' => "Pengurangan otomatis untuk produk langsung selesai - Transaksi {$transaksi->kode} - {$produk->nama}",
+                                'created_by' => Auth::id(),
+                            ]);
+
+                            // FIFO: ambil dari batch yang paling lama
+                            $sisaKeluar = $jumlahDikurangi;
+                            $batches = \App\Models\BahanStokBatch::getAvailableBatches($produkBahan->bahan_id, $jumlahDikurangi);
+
+                            foreach ($batches as $batch) {
+                                if ($sisaKeluar <= 0) break;
+
+                                $jumlahDigunakan = min($sisaKeluar, $batch->jumlah_tersedia);
+                                
+                                // Buat record usage untuk bahan mutasi
+                                \App\Models\BahanMutasiPenggunaanBatch::create([
+                                    'bahan_mutasi_id' => $mutasi->id,
+                                    'bahan_stok_batch_id' => $batch->id,
+                                    'jumlah_digunakan' => $jumlahDigunakan,
+                                ]);
+
+                                // Kurangi jumlah_tersedia dari batch
+                                $batch->reduceStock($jumlahDigunakan);
+
+                                $sisaKeluar -= $jumlahDigunakan;
+                            }
+                        }
+                    }
+                }
+
                 $urutan = 1;
                 
                 // Ambil data proses yang perlu sample approval dari kalkulasi
@@ -606,6 +675,11 @@ class KasirPage extends Page implements HasTable, HasForms
                     'link_design' => $linkDesignCombined
                 ]);
             }
+
+            // Update status transaksi berdasarkan status semua produk
+            // Jika semua produk langsung selesai, status akan SIAP_DIAMBIL
+            $transaksi->refresh();
+            $transaksi->updateStatusFromProduks();
 
             DB::commit();
 
