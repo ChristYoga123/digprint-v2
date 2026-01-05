@@ -170,10 +170,9 @@ class POResource extends Resource
                                                 $luas = $panjang * $lebar;
                                                 $set('jumlah_terkecil', (string) $luas);
                                                 
-                                                // Update harga satuan terkecil (perlu dikali jumlah_terbesar untuk total)
-                                                $totalTerkecil = $luas * $jumlahTerbesar;
-                                                if ($hargaSatuanTerbesar > 0) {
-                                                    $hargaSatuanTerkecil = $totalTerkecil > 0 ? round($hargaSatuanTerbesar / $totalTerkecil) : 0;
+                                                // Update harga satuan terkecil (Harga Satuan Besar / Luas)
+                                                if ($hargaSatuanTerbesar > 0 && $luas > 0) {
+                                                    $hargaSatuanTerkecil = round($hargaSatuanTerbesar / $luas);
                                                     $set('harga_satuan_terkecil', (string) $hargaSatuanTerkecil);
                                                 }
                                             }
@@ -211,7 +210,7 @@ class POResource extends Resource
                                             ->required()
                                             ->numeric()
                                             ->step(0.01)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->visible(fn (Forms\Get $get) => $get('input_via') === 'Dimensi')
                                             ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                                 $parse = fn ($value) => (float) str_replace([',', ' '], '', (string) ($value ?? 0));
@@ -223,12 +222,10 @@ class POResource extends Resource
                                                     $luas = $panjang * $lebar;
                                                     $set('jumlah_terkecil', (string) $luas);
                                                     
-                                                    // Update harga satuan terkecil (perlu dikali jumlah_terbesar untuk total)
-                                                    $jumlahTerbesar = $parse($get('jumlah_terbesar'));
-                                                    $totalTerkecil = $luas * $jumlahTerbesar;
+                                                    // Update harga satuan terkecil (Harga Satuan Besar / Luas)
                                                     $hargaSatuanTerbesar = $parse($get('harga_satuan_terbesar'));
-                                                    if ($hargaSatuanTerbesar > 0) {
-                                                        $hargaSatuanTerkecil = $totalTerkecil > 0 ? round($hargaSatuanTerbesar / $totalTerkecil) : 0;
+                                                    if ($hargaSatuanTerbesar > 0 && $luas > 0) {
+                                                        $hargaSatuanTerkecil = round($hargaSatuanTerbesar / $luas);
                                                         $set('harga_satuan_terkecil', (string) $hargaSatuanTerkecil);
                                                     }
                                                 }
@@ -238,7 +235,7 @@ class POResource extends Resource
                                             ->required()
                                             ->numeric()
                                             ->step(0.01)
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->visible(fn (Forms\Get $get) => $get('input_via') === 'Dimensi')
                                             ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
                                                 $parse = fn ($value) => (float) str_replace([',', ' '], '', (string) ($value ?? 0));
@@ -250,12 +247,10 @@ class POResource extends Resource
                                                     $luas = $panjang * $lebar;
                                                     $set('jumlah_terkecil', (string) $luas);
                                                     
-                                                    // Update harga satuan terkecil (perlu dikali jumlah_terbesar untuk total)
-                                                    $jumlahTerbesar = $parse($get('jumlah_terbesar'));
-                                                    $totalTerkecil = $luas * $jumlahTerbesar;
+                                                    // Update harga satuan terkecil (Harga Satuan Besar / Luas)
                                                     $hargaSatuanTerbesar = $parse($get('harga_satuan_terbesar'));
-                                                    if ($hargaSatuanTerbesar > 0) {
-                                                        $hargaSatuanTerkecil = $totalTerkecil > 0 ? round($hargaSatuanTerbesar / $totalTerkecil) : 0;
+                                                    if ($hargaSatuanTerbesar > 0 && $luas > 0) {
+                                                        $hargaSatuanTerkecil = round($hargaSatuanTerbesar / $luas);
                                                         $set('harga_satuan_terkecil', (string) $hargaSatuanTerkecil);
                                                     }
                                                 }
@@ -338,10 +333,11 @@ class POResource extends Resource
                                         $luas = $panjang * $lebar;
                                         $set('jumlah_terkecil', (string) $luas);
                                         
-                                        // Recalculate harga satuan terkecil (perlu dikali jumlah_terbesar untuk total)
-                                        $totalTerkecil = $luas * $jumlahTerbesar;
-                                        $hargaSatuanTerkecil = $totalTerkecil > 0 ? round($hargaSatuanTerbesar / $totalTerkecil) : 0;
-                                        $set('harga_satuan_terkecil', (string) $hargaSatuanTerkecil);
+                                        // Recalculate harga satuan terkecil (Harga Satuan Besar / Luas)
+                                        if ($hargaSatuanTerbesar > 0 && $luas > 0) {
+                                            $hargaSatuanTerkecil = round($hargaSatuanTerbesar / $luas);
+                                            $set('harga_satuan_terkecil', (string) $hargaSatuanTerkecil);
+                                        }
                                     }
                                 }
                             })

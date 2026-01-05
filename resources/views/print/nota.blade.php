@@ -615,6 +615,19 @@
             gap: 5px;
             width: 100%;
         }
+
+        .item-component {
+            padding-left: 15px;
+            font-style: italic;
+            color: #4b5563;
+            font-size: 0.9em;
+        }
+
+        .component-row td {
+            border-top: none;
+            padding-top: 0;
+            padding-bottom: 2px;
+        }
     </style>
 </head>
 
@@ -629,9 +642,12 @@
             <a href="?transaksi_id={{ $transaksi->id }}&size=a4"
                 class="btn-size {{ $size === 'a4' ? 'active' : '' }}">📑 A4</a>
         </div>
+
         <button class="btn-print" onclick="window.print()">🖨️ Cetak</button>
         <button class="btn-back" onclick="window.history.back()">← Kembali</button>
     </div>
+
+
 
     <div class="nota-container">
         @if ($size === 'a4')
@@ -679,6 +695,10 @@
                 <span>: {{ $kasir }}</span>
             </div>
             <div class="nota-info-row">
+                <span class="label">Deskprint</span>
+                <span>: {{ $deskprint }}</span>
+            </div>
+            <div class="nota-info-row">
                 <span class="label">Status</span>
                 <span>:
                     <span
@@ -702,11 +722,20 @@
                 </tr>
             </thead>
             <tbody>
+                @php $no = 0; @endphp
                 @foreach ($items as $index => $item)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
+                    <tr class="{{ isset($item['type']) && $item['type'] === 'component' ? 'component-row' : '' }}">
                         <td>
-                            <div class="item-name">{{ $item['nama'] }}</div>
+                            @if (!isset($item['type']) || $item['type'] === 'main')
+                                @php $no++; @endphp
+                                {{ $no }}
+                            @endif
+                        </td>
+                        <td>
+                            <div
+                                class="{{ isset($item['type']) && $item['type'] === 'component' ? 'item-component' : 'item-name' }}">
+                                {{ $item['nama'] }}
+                            </div>
                             @if ($item['judul'])
                                 <div class="item-detail">{{ $item['judul'] }}</div>
                             @endif

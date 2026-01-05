@@ -45,6 +45,7 @@ class ProdukResource extends Resource
                                 ->maxLength(255)
                                 ->unique(ignoreRecord: true)
                                 ->columnSpanFull(),
+
                             Forms\Components\ToggleButtons::make('apakah_perlu_custom_dimensi')
                                 ->label('Apakah bisa custom dimensi?')
                                 ->options([
@@ -811,6 +812,20 @@ class ProdukResource extends Resource
                         ->schema(function ($record) {
                             $customerKategoris = CustomerKategori::all();
                             $sections = [];
+
+                            // Add Harga Minimal Input
+                            $sections[] = Forms\Components\Section::make('Pengaturan Harga Dasar')
+                                ->schema([
+                                    Forms\Components\TextInput::make('harga_minimal')
+                                        ->label('Harga Minimal')
+                                        ->helperText('Jika total kalkulasi harga produk di bawah nilai ini, harga minimal yang akan digunakan.')
+                                        ->numeric()
+                                        ->prefix('Rp')
+                                        ->mask(RawJs::make('$money($input)'))
+                                        ->stripCharacters(',')
+                                        ->default(0)
+                                        ->columnSpanFull(),
+                                ]);
                             
                             foreach ($customerKategoris as $kategori) {
                                 $kategoriId = $kategori->id;
@@ -944,6 +959,9 @@ class ProdukResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('harga_minimal')
+                    ->money('IDR')
+                    ->toggleable(),
                 ...$priceColumns, // Spread operator untuk menambahkan kolom harga dinamis
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

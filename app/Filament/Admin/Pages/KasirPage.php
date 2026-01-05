@@ -556,11 +556,11 @@ class KasirPage extends Page implements HasTable, HasForms
                                 // Jika dipengaruhi dimensi, hitung berdasarkan panjang x lebar
                                 $panjang = $produkData['panjang'] ?? 0;
                                 $lebar = $produkData['lebar'] ?? 0;
-                                $luas = ceil(($panjang * $lebar) / 10000); // Convert cm² to m²
-                                $jumlahDikurangi = $luas * $produkData['jumlah'];
+                                $luas = ($panjang * $lebar) / 10000; // Convert cm² to m²
+                                $jumlahDikurangi = round($luas * $produkData['jumlah'], 2);
                             } else {
                                 // Jika fixed, gunakan jumlah yang sudah ditentukan
-                                $jumlahDikurangi = $produkBahan->jumlah * $produkData['jumlah'];
+                                $jumlahDikurangi = round($produkBahan->jumlah * $produkData['jumlah'], 2);
                             }
                             
                             // Cek stok tersedia

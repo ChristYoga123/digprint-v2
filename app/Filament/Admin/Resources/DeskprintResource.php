@@ -837,17 +837,30 @@ class DeskprintResource extends Resource
                                                 }
                                                 
                                                 // HITUNG TOTAL PRODUK FINAL
-                                                // Jika total_harga_produk sudah ada dari state, gunakan itu (sudah termasuk design dan addon)
-                                                // Jika tidak, hitung: Subtotal Produk + Design + Total Addon
+                                                $realCalculated = $totalProduk + $totalDesign + $totalAddon;
+                                                
                                                 if ($totalProdukFromState !== null && $totalProdukFromState > 0) {
                                                     $totalProdukFinal = $totalProdukFromState;
                                                 } else {
-                                                    $totalProdukFinal = $totalProduk + $totalDesign + $totalAddon;
+                                                    // Jika belum ada di state, terapkan logika harga minimal
+                                                    if ($produkModel->harga_minimal > 0 && $realCalculated < $produkModel->harga_minimal) {
+                                                        $totalProdukFinal = (float) $produkModel->harga_minimal;
+                                                    } else {
+                                                        $totalProdukFinal = $realCalculated;
+                                                    }
                                                 }
                                                 
                                                 $html .= '<div style="margin-top: 12px; padding-top: 8px; border-top: 2px solid #10b981; font-weight: bold; color: #059669;">';
                                                 $html .= 'Total Produk #' . $produkCounter . ': ' . formatRupiah($totalProdukFinal);
                                                 $html .= '</div>';
+                                                
+                                                // Tampilkan info jika terkena harga minimal
+                                                if ($produkModel->harga_minimal > 0 && $realCalculated < $produkModel->harga_minimal) {
+                                                     $html .= '<div style="font-size: 11px; color: #d97706; margin-top: 4px; font-style: italic;">
+                                                        * Harga auto-adjust ke minimum: ' . formatRupiah($produkModel->harga_minimal) . ' 
+                                                        (Kalkulasi asli: ' . formatRupiah($realCalculated) . ')
+                                                     </div>';
+                                                }
                                                 $html .= '</div>';
                                                 
                                                 $totalKeseluruhan += $totalProdukFinal;
@@ -1116,6 +1129,14 @@ class DeskprintResource extends Resource
                 $totalProduk += (float) $totalAddon;
             }
         }
+
+        // Cek Harga Minimal Produk
+        $produkModel = Produk::find($data['produk_id']);
+        if ($produkModel && $produkModel->harga_minimal > 0) {
+            if ($totalProduk < $produkModel->harga_minimal) {
+                $totalProduk = (float) $produkModel->harga_minimal;
+            }
+        }
         
         // Set total_harga_produk (convert ke integer untuk database)
         $data['total_harga_produk'] = (int) round($totalProduk);
@@ -1181,6 +1202,14 @@ class DeskprintResource extends Resource
                         ->whereNotNull('harga')
                         ->sum('harga');
                     $totalProduk += (float) $totalAddon;
+                }
+            }
+
+            // Cek Harga Minimal Produk
+            $produkModel = Produk::find($produk->produk_id);
+            if ($produkModel && $produkModel->harga_minimal > 0) {
+                if ($totalProduk < $produkModel->harga_minimal) {
+                    $totalProduk = (float) $produkModel->harga_minimal;
                 }
             }
 
