@@ -110,16 +110,15 @@ class ProdukResource extends Resource
                                     ->label('Nama Design')
                                     ->required()
                                     ->searchable()
-                                    ->getSearchResultsUsing(function (string $search) {
+                                    ->preload()
+                                    ->options(function () {
                                         return \App\Models\Proses::where('produk_proses_kategori_id', 1)
-                                            ->where('nama', 'like', "%{$search}%")
-                                            ->limit(50)
+                                            ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
                                                 $proses->nama => $proses->nama . ($proses->harga_default ? ' (Default: ' . formatRupiah($proses->harga_default) . ')' : '')
                                             ]);
                                     })
-                                    ->getOptionLabelUsing(fn ($value) => $value)
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan isi harga default jika ada
@@ -266,16 +265,15 @@ class ProdukResource extends Resource
                                     ->label('Nama Proses')
                                     ->required()
                                     ->searchable()
-                                    ->getSearchResultsUsing(function (string $search) {
+                                    ->preload()
+                                    ->options(function () {
                                         return \App\Models\Proses::where('produk_proses_kategori_id', 2)
-                                            ->where('nama', 'like', "%{$search}%")
-                                            ->limit(50)
+                                            ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
                                                 $proses->nama => $proses->nama
                                             ]);
                                     })
-                                    ->getOptionLabelUsing(fn ($value) => $value)
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan link-kan
@@ -521,16 +519,15 @@ class ProdukResource extends Resource
                                     ->label('Nama Addon')
                                     ->required()
                                     ->searchable()
-                                    ->getSearchResultsUsing(function (string $search) {
+                                    ->preload()
+                                    ->options(function () {
                                         return \App\Models\Proses::where('produk_proses_kategori_id', 3)
-                                            ->where('nama', 'like', "%{$search}%")
-                                            ->limit(50)
+                                            ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
                                                 $proses->nama => $proses->nama . ($proses->harga_default ? ' (Default: ' . formatRupiah($proses->harga_default) . ')' : '')
                                             ]);
                                     })
-                                    ->getOptionLabelUsing(fn ($value) => $value)
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan isi harga default jika ada
