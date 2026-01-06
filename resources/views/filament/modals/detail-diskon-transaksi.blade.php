@@ -74,7 +74,7 @@
                             </td>
                             @if ($transaksi->jenis_diskon?->value === 'Per Item')
                                 <td class="px-4 py-3 text-sm text-red-600 dark:text-red-400 text-right font-semibold">
-                                    - Rp {{ number_format($produk->diskon_produk ?? 0, 0, ',', '.') }}
+                                    - Rp {{ number_format($produk->total_diskon_produk ?? 0, 0, ',', '.') }}
                                 </td>
                             @endif
                             <td class="px-4 py-3 text-sm text-gray-900 dark:text-white text-right font-semibold">
