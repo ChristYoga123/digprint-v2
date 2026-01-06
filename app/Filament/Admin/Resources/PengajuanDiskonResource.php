@@ -98,7 +98,19 @@ class PengajuanDiskonResource extends Resource implements HasShieldPermissions
                         JenisDiskonEnum::PER_ITEM => 'info',
                         JenisDiskonEnum::PER_INVOICE => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->description(function(Transaksi $record) {
+                        // Jika diskon per item, tampilkan produk mana yang didiskon
+                        if ($record->jenis_diskon === JenisDiskonEnum::PER_ITEM || $record->jenis_diskon?->value === 'Per Item') {
+                            $productsWithDiscount = $record->transaksiProduks
+                                ->filter(fn($p) => ($p->total_diskon_produk ?? 0) > 0)
+                                ->map(fn($p) => $p->produk?->nama . ' (-' . formatRupiah($p->total_diskon_produk) . ')')
+                                ->join(', ');
+                            return $productsWithDiscount ?: 'Tidak ada produk dengan diskon';
+                        }
+                        return null;
+                    })
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('total_harga_transaksi')
                     ->label('Total Harga')
                     ->money('IDR')

@@ -98,12 +98,24 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                     ->money('IDR')
                     ->sortable()
                     ->description(function(Transaksi $record) {
+                        $descriptions = [];
+                        
+                        // Cek apakah ada diskon pending approval
+                        if ($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null) {
+                            $descriptions[] = new HtmlString('<span style="color: orange;" class="font-bold">⏳ Diskon ' . formatRupiah($record->total_diskon_transaksi) . ' menunggu approval</span>');
+                            $descriptions[] = new HtmlString('<span style="color: gray;">Harga asli: ' . formatRupiah($record->total_harga_transaksi) . '</span>');
+                        }
+                        
+                        // Cek sisa tagihan
                         $dibayar = $record->pencatatanKeuangans->sum('jumlah_bayar');
                         $sisa = max(0, $record->total_harga_transaksi_setelah_diskon - $dibayar);
                         if ($sisa > 0) {
-                            return new HtmlString('<span style="color: red;" class="font-bold">Tagihan: ' . formatRupiah($sisa) . '</span>');
+                            $descriptions[] = new HtmlString('<span style="color: red;" class="font-bold">Tagihan: ' . formatRupiah($sisa) . '</span>');
                         }
-                    }),
+                        
+                        return !empty($descriptions) ? new HtmlString(implode('<br>', array_map(fn($d) => $d->toHtml(), $descriptions))) : null;
+                    })
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('dikerjakan_oleh')
                     ->label('Dikerjakan Oleh')
                     ->getStateUsing(function(Transaksi $record) {
@@ -182,7 +194,11 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                             // Use JavaScript to open in new tab
                             $livewire->js("window.open('{$url}', '_blank');");
                         })
-                        ->visible(fn () => Auth::user()->can('print_nota_transaksi')),
+                        // Hidden jika ada diskon belum di-approve
+                        ->visible(fn (Transaksi $record) => 
+                            Auth::user()->can('print_nota_transaksi') &&
+                            !($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null)
+                        ),
                     Tables\Actions\ViewAction::make()
                         ->label('Lihat Ringkasan Biaya')
                         ->icon('heroicon-o-document-text')
