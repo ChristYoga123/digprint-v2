@@ -107,7 +107,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         $query->whereHas('produkProses', function($q) {
                             $q->where('produk_proses_kategori_id', 3);
                         })
-                        ->where('status_proses', StatusProsesEnum::BELUM)
+                        ->whereIn('status_proses', [StatusProsesEnum::BELUM, StatusProsesEnum::DALAM_PROSES])
                         ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin
                     })
                     ->with([
@@ -150,6 +150,25 @@ class FinishingResource extends Resource implements HasShieldPermissions
                 TextColumn::make('jumlah')
                     ->label('Jumlah')
                     ->suffix(' pcs'),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->getStateUsing(function(TransaksiProduk $record) {
+                        // Cek status dari addon yang belum selesai
+                        $unfinishedAddon = $record->transaksiProses
+                            ->filter(fn($tp) => 
+                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                && $tp->status_proses !== StatusProsesEnum::SELESAI
+                                && !$tp->apakah_menggunakan_subjoin
+                            )
+                            ->first();
+                        return $unfinishedAddon?->status_proses?->getLabel() ?? '-';
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'Belum' => 'gray',
+                        'Dalam Proses' => 'warning',
+                        default => 'gray',
+                    }),
                 TextColumn::make('transaksi.created_at')
                     ->label('Tanggal Order')
                     ->dateTime('d M Y H:i')

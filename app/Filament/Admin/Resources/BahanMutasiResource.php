@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Models\PO;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Bahan;
@@ -14,7 +15,11 @@ use Filament\Tables\Table;
 use App\Models\BahanMutasi;
 use Filament\Support\RawJs;
 use Filament\Resources\Resource;
+use App\Models\BahanMutasiFaktur;
+use App\Models\PencatatanKeuangan;
 use App\Enums\BahanMutasi\TipeEnum;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,10 +27,6 @@ use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Filament\Admin\Resources\BahanMutasiResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use App\Filament\Admin\Resources\BahanMutasiResource\RelationManagers;
-use App\Models\BahanMutasiFaktur;
-use App\Models\PencatatanKeuangan;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class BahanMutasiResource extends Resource
 {
@@ -628,7 +629,8 @@ class BahanMutasiResource extends Resource
                 Tables\Columns\TextColumn::make('tipe')
                     ->label('Tipe')
                     ->badge(TipeEnum::class)
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn(BahanMutasi $record) => Carbon::parse($record->created_at)->format('d F Y')),
                 Tables\Columns\TextColumn::make('bahan.nama')
                     ->label('Bahan')
                     ->searchable()
