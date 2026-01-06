@@ -34,6 +34,7 @@ use App\Filament\Admin\Resources\DeskprintResource;
 use App\Filament\Admin\Resources\FinishingResource;
 use App\Filament\Admin\Resources\PettyCashResource;
 use App\Filament\Admin\Resources\TransaksiResource;
+use App\Filament\Admin\Resources\LaporanHPPResource;
 use App\Filament\Admin\Resources\BahanMutasiResource;
 use App\Filament\Admin\Resources\PraProduksiResource;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -48,6 +49,7 @@ use App\Filament\Admin\Resources\PengajuanSubjoinResource;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource;
+use App\Filament\Admin\Resources\LaporanDPCustomerResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Admin\Resources\LaporanKasPemasukanResource;
 use App\Filament\Admin\Resources\LaporanKerjaKaryawanResource;
@@ -55,6 +57,7 @@ use App\Filament\Admin\Resources\ProdukProsesKategoriResource;
 use App\Filament\Admin\Resources\LaporanHutangSupplierResource;
 use App\Filament\Admin\Resources\LaporanLemburKaryawanResource;
 use App\Filament\Admin\Resources\LaporanPembelianHarianResource;
+use App\Filament\Admin\Resources\LaporanPiutangCustomerResource;
 use App\Filament\Admin\Resources\LaporanPembayaranSupplierResource;
 
 class AdminPanelProvider extends PanelProvider
@@ -133,7 +136,10 @@ class AdminPanelProvider extends PanelProvider
                                 ...LaporanHutangSupplierResource::getNavigationItems(),
                                 ...
                                 LaporanPembayaranSupplierResource::getNavigationItems(),
+                                ...LaporanHPPResource::getNavigationItems(),
                                 ...LaporanKasPemasukanResource::getNavigationItems(),
+                                ...LaporanPiutangCustomerResource::getNavigationItems(),
+                                // ...LaporanDPCustomerResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Produksi')
                             ->items([
