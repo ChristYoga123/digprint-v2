@@ -827,8 +827,9 @@ class DeskprintResource extends Resource
                                                         $html .= '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f3f4f6;">';
                                                         $html .= '<strong>Addons:</strong><br>';
                                                         foreach ($addons as $addon) {
-                                                            $html .= '• ' . $addon->nama . ': ' . formatRupiah($addon->harga) . '<br>';
-                                                            $totalAddon += (float) $addon->harga;
+                                                            $addonHargaTotal = (float) ($addon->harga * $jumlahFloat);
+                                                            $html .= '• ' . $addon->nama . ': ' . formatRupiah($addon->harga) . ' x ' . $jumlahFloat . ' = ' . formatRupiah($addonHargaTotal) . '<br>';
+                                                            $totalAddon += $addonHargaTotal;
                                                         }
                                                         $html .= '<strong>Total Addon: ' . formatRupiah($totalAddon) . '</strong>';
                                                         $html .= '</div>';
