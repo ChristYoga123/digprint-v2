@@ -63,7 +63,7 @@ class PettyCashPolicy
      */
     public function forceDelete(User $user, PettyCash $pettyCash): bool
     {
-        return $user->can('force_delete_petty::cash');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class PettyCashPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_petty::cash');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class PettyCashPolicy
      */
     public function restore(User $user, PettyCash $pettyCash): bool
     {
-        return $user->can('restore_petty::cash');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class PettyCashPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_petty::cash');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class PettyCashPolicy
      */
     public function replicate(User $user, PettyCash $pettyCash): bool
     {
-        return $user->can('replicate_petty::cash');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class PettyCashPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_petty::cash');
+        return $user->can('{{ Reorder }}');
     }
 }

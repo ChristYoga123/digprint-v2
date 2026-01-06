@@ -63,7 +63,7 @@ class BahanPolicy
      */
     public function forceDelete(User $user, Bahan $bahan): bool
     {
-        return $user->can('force_delete_bahan');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class BahanPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_bahan');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class BahanPolicy
      */
     public function restore(User $user, Bahan $bahan): bool
     {
-        return $user->can('restore_bahan');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class BahanPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_bahan');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class BahanPolicy
      */
     public function replicate(User $user, Bahan $bahan): bool
     {
-        return $user->can('replicate_bahan');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class BahanPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_bahan');
+        return $user->can('{{ Reorder }}');
     }
 }

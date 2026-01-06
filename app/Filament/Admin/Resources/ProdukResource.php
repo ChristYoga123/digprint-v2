@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\ProdukResource\Pages;
 use App\Filament\Admin\Resources\ProdukResource\RelationManagers;
+use Illuminate\Support\Facades\Auth;
 
 class ProdukResource extends Resource
 {
@@ -22,6 +23,11 @@ class ProdukResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationLabel = 'Produk';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_produk') && Auth::user()->can('view_any_produk');
+    }
 
     public static function form(Form $form): Form
     {
@@ -976,12 +982,15 @@ class ProdukResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_produk')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_produk')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_produk')),
                 ]),
             ]);
     }

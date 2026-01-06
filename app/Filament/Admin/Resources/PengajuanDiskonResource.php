@@ -15,8 +15,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Transaksi\JenisDiskonEnum;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PengajuanDiskonResource extends Resource
+class PengajuanDiskonResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = Transaksi::class;
 
@@ -27,6 +28,21 @@ class PengajuanDiskonResource extends Resource
     protected static ?string $modelLabel = 'Pengajuan Diskon';
 
     protected static ?string $pluralModelLabel = 'Pengajuan Diskon';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_pengajuan::diskon') && Auth::user()->can('view_any_pengajuan::diskon');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'approve',
+            'reject'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -115,7 +131,8 @@ class PengajuanDiskonResource extends Resource
                     ->modalHeading(fn(Transaksi $record) => 'Detail Transaksi: ' . $record->kode)
                     ->modalContent(fn(Transaksi $record) => view('filament.modals.detail-diskon-transaksi', ['transaksi' => $record]))
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
+                    ->modalCancelActionLabel('Tutup')
+                    ->visible(fn () => Auth::user()->can('view_pengajuan::diskon')),
                 Action::make('approve_diskon')
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
@@ -127,6 +144,7 @@ class PengajuanDiskonResource extends Resource
                         $jenisDiskon = $record->jenis_diskon?->getLabel() ?? '-';
                         return "Approve diskon sebesar {$diskonFormatted} ({$jenisDiskon}) untuk transaksi {$record->kode}?";
                     })
+                    ->visible(fn () => Auth::user()->can('approve_pengajuan::diskon'))
                     ->action(function(Transaksi $record) {
                         try {
                             $record->update([
@@ -154,6 +172,7 @@ class PengajuanDiskonResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tolak Pengajuan Diskon')
                     ->modalDescription(fn(Transaksi $record) => 'Tolak diskon untuk transaksi ' . $record->kode . '? Diskon akan di-reset ke 0.')
+                    ->visible(fn () => Auth::user()->can('reject_pengajuan::diskon'))
                     ->action(function(Transaksi $record) {
                         try {
                             $record->update([

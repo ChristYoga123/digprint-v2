@@ -63,7 +63,7 @@ class KaryawanPekerjaanPolicy
      */
     public function forceDelete(User $user, KaryawanPekerjaan $karyawanPekerjaan): bool
     {
-        return $user->can('force_delete_pengajuan::lembur');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class KaryawanPekerjaanPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_pengajuan::lembur');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class KaryawanPekerjaanPolicy
      */
     public function restore(User $user, KaryawanPekerjaan $karyawanPekerjaan): bool
     {
-        return $user->can('restore_pengajuan::lembur');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class KaryawanPekerjaanPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_pengajuan::lembur');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class KaryawanPekerjaanPolicy
      */
     public function replicate(User $user, KaryawanPekerjaan $karyawanPekerjaan): bool
     {
-        return $user->can('replicate_pengajuan::lembur');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class KaryawanPekerjaanPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_pengajuan::lembur');
+        return $user->can('{{ Reorder }}');
     }
 }

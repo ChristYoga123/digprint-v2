@@ -22,13 +22,32 @@ use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource\Pages;
 use App\Livewire\Admin\BahanMutasiFakturResource\DetailPembayaranTable;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource\RelationManagers;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class BahanMutasiFakturResource extends Resource
+class BahanMutasiFakturResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = BahanMutasiFaktur::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationLabel = 'Faktur';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi::faktur') && Auth::user()->can('view_any_bahan::mutasi::faktur');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'pay'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -114,19 +133,21 @@ class BahanMutasiFakturResource extends Resource
                     ->label('Detail Faktur')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
-                    ->url(fn (BahanMutasiFaktur $record) => Pages\BahanMutasiFakturDetailPage::getUrl(['record' => $record])),
+                    ->url(fn (BahanMutasiFaktur $record) => Pages\BahanMutasiFakturDetailPage::getUrl(['record' => $record]))
+                    ->visible(fn () => Auth::user()->can('view_bahan::mutasi::faktur')),
                 Tables\Actions\Action::make('detail_pembayaran')
                     ->label('Detail Pembayaran')
                     ->icon('heroicon-o-credit-card')
                     ->color('primary')
                     ->infolist(fn (BahanMutasiFaktur $record) => [
                         Livewire::make(DetailPembayaranTable::class, ['faktur' => $record]),
-                    ]),
+                    ])
+                    ->visible(fn () => Auth::user()->can('view_bahan::mutasi::faktur')),
                 Tables\Actions\Action::make('bayar_top')
                     ->label('Bayar TOP')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('success')
-                    ->visible(fn (BahanMutasiFaktur $record) => $record->status_pembayaran === StatusPembayaranEnum::TERM_OF_PAYMENT)
+                    ->visible(fn (BahanMutasiFaktur $record) => $record->status_pembayaran === StatusPembayaranEnum::TERM_OF_PAYMENT && Auth::user()->can('pay_bahan::mutasi::faktur'))
                     ->form([
                         // filter metode pembayaran based on supplier master data include CASH
                         Forms\Components\Select::make('metode_pembayaran')

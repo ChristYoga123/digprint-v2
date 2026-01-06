@@ -28,8 +28,9 @@ use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Enums\Kloter\StatusEnum as KloterStatusEnum;
 use App\Filament\Admin\Resources\ProduksiResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class ProduksiResource extends Resource
+class ProduksiResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = TransaksiProses::class;
 
@@ -40,6 +41,23 @@ class ProduksiResource extends Resource
     protected static ?string $modelLabel = 'Produksi';
     
     protected static ?int $navigationSort = 32;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_produksi') && Auth::user()->can('view_any_produksi');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'start_work',
+            'send_sample',
+            'assign_batch',
+            'complete'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -172,7 +190,7 @@ class ProduksiResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Mulai Produksi')
                     ->modalDescription('Mulai proses produksi ini?')
-                    ->visible(fn(TransaksiProses $record) => $record->status_proses === StatusProsesEnum::BELUM && !$record->apakah_menggunakan_subjoin)
+                    ->visible(fn(TransaksiProses $record) => $record->status_proses === StatusProsesEnum::BELUM && !$record->apakah_menggunakan_subjoin && Auth::user()->can('start_work_produksi'))
                     ->action(function(TransaksiProses $record) {
                         $record->update(['status_proses' => StatusProsesEnum::DALAM_PROSES->value]);
                         $record->transaksiProduk->refreshStatus();
@@ -196,7 +214,8 @@ class ProduksiResource extends Resource
                         return $record->apakah_perlu_sample_approval 
                             && $record->produkProses?->apakah_mengurangi_bahan
                             && $record->status_proses === StatusProsesEnum::DALAM_PROSES
-                            && !$record->apakah_menggunakan_subjoin;
+                            && !$record->apakah_menggunakan_subjoin
+                            && Auth::user()->can('send_sample_produksi');
                     })
                     ->action(function(TransaksiProses $record) {
                         try {
@@ -219,7 +238,7 @@ class ProduksiResource extends Resource
                     ->label('Kloter')
                     ->icon('heroicon-o-plus')
                     ->color('warning')
-                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES)
+                    ->visible(fn(TransaksiProses $record) => $record->kloter_id === null && !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES && Auth::user()->can('assign_batch_produksi'))
                     ->form([
                         Select::make('kloter_id')
                             ->label('Pilih Kloter')
@@ -265,7 +284,7 @@ class ProduksiResource extends Resource
                         }
                         return $desc;
                     })
-                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES)
+                    ->visible(fn(TransaksiProses $record) => !$record->apakah_menggunakan_subjoin && $record->status_proses === StatusProsesEnum::DALAM_PROSES && Auth::user()->can('complete_produksi'))
                     ->form([
                         Toggle::make('ada_helper')
                             ->label('Ada teman yang membantu?')

@@ -18,8 +18,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use App\Filament\Admin\Resources\PengajuanSubjoinResource\Pages;
+use Illuminate\Support\Facades\Auth;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PengajuanSubjoinResource extends Resource
+class PengajuanSubjoinResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = TransaksiProdukSubjoin::class;
 
@@ -30,6 +32,21 @@ class PengajuanSubjoinResource extends Resource
     protected static ?string $modelLabel = 'Pengajuan Subjoin';
 
     protected static ?string $pluralModelLabel = 'Pengajuan Subjoin';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_pengajuan::subjoin') && Auth::user()->can('view_any_pengajuan::subjoin');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'approve',
+            'reject'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -105,6 +122,7 @@ class PengajuanSubjoinResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Approve Pengajuan Subjoin')
                     ->modalDescription(fn(TransaksiProdukSubjoin $record) => 'Approve subjoin untuk proses: ' . $record->produkProses?->nama)
+                    ->visible(fn () => Auth::user()->can('approve_pengajuan::subjoin'))
                     ->form([
                         TextInput::make('nama_vendor')
                             ->label('Nama Vendor')
@@ -168,6 +186,7 @@ class PengajuanSubjoinResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Tolak Pengajuan Subjoin')
                     ->modalDescription(fn(TransaksiProdukSubjoin $record) => 'Tolak subjoin untuk proses: ' . $record->produkProses?->nama . '? Data akan dihapus.')
+                    ->visible(fn () => Auth::user()->can('reject_pengajuan::subjoin'))
                     ->action(function(TransaksiProdukSubjoin $record) {
                         try {
                             $record->delete();

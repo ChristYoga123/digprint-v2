@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerKategoriResource extends Resource
 {
@@ -19,6 +20,11 @@ class CustomerKategoriResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Kategori Customer';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_customer::kategori') && Auth::user()->can('view_any_customer::kategori');
+    }
 
     public static function form(Form $form): Form
     {
@@ -65,12 +71,15 @@ class CustomerKategoriResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_customer::kategori')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_customer::kategori')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_customer::kategori')),
                 ]),
             ]);
     }
@@ -82,3 +91,4 @@ class CustomerKategoriResource extends Resource
         ];
     }
 }
+

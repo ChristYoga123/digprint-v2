@@ -18,6 +18,7 @@ use Filament\Resources\Resource;
 use App\Models\TransaksiKalkulasi;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use App\Filament\Admin\Resources\DeskprintResource\Pages\ManageDeskprints;
 
 class DeskprintResource extends Resource
@@ -26,6 +27,11 @@ class DeskprintResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
     protected static ?string $navigationLabel = 'Deskprint';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_deskprint') && Auth::user()->can('view_any_deskprint');
+    }
 
     public static function form(Form $form): Form
     {
@@ -1254,20 +1260,22 @@ class DeskprintResource extends Resource
                     ->color('success')
                     ->modalHeading(fn(TransaksiKalkulasi $record) => 'Ringkasan Biaya - ' . $record->kode)
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup'),
+                    ->modalCancelActionLabel('Tutup')
+                    ->visible(fn () => Auth::user()->can('view_deskprint')),
                 Tables\Actions\EditAction::make()
                     ->after(function ($record) {
                         // Update total_harga_produk untuk setiap produk setelah edit
                         static::updateTotalHargaProdukForRecord($record);
                     })
                     ->modalHeading('Deskprint')
-                    ->visible(fn(TransaksiKalkulasi $record) => $record->transaksis->isEmpty()),
+                    ->visible(fn(TransaksiKalkulasi $record) => $record->transaksis->isEmpty() && Auth::user()->can('update_deskprint')),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn(TransaksiKalkulasi $record) => $record->transaksis->isEmpty()),
+                    ->visible(fn(TransaksiKalkulasi $record) => $record->transaksis->isEmpty() && Auth::user()->can('delete_deskprint')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_deskprint')),
                 ]),
             ]);
     }

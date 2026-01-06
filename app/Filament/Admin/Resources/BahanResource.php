@@ -10,17 +10,37 @@ use Filament\Tables\Table;
 use Filament\Support\RawJs;
 use Filament\Resources\Resource;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\BahanResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Admin\Resources\BahanResource\RelationManagers;
 
-class BahanResource extends Resource
+class BahanResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = Bahan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_bahan') && Auth::user()->can('view_any_bahan');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'import',
+        ];
+    }
 
     public static function form(Form $form): Form
     {
@@ -163,13 +183,17 @@ class BahanResource extends Resource
                     ->label('Lihat Batch')
                     ->icon('heroicon-o-eye')
                     ->color('info')
+                    ->visible(fn () => Auth::user()->can('view_bahan'))
                     ->url(fn (Bahan $record) => Pages\BahanBatchPage::getUrl(['record' => $record->id])),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_bahan')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_bahan')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_bahan')),
                 ]),
             ]);
     }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Filament\Admin\Resources\LaporanHutangSupplierResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanHutangSupplierResource extends Resource
 {
@@ -28,6 +29,11 @@ class LaporanHutangSupplierResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Hutang Supplier';
     
     protected static ?string $slug = 'laporan-hutang-supplier';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::hutang::supplier') && Auth::user()->can('view_any_laporan::hutang::supplier');
+    }
 
     public static function canCreate(): bool
     {

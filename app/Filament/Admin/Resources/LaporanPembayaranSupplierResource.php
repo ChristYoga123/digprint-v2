@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Admin\Resources\LaporanPembayaranSupplierResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanPembayaranSupplierResource extends Resource
 {
@@ -26,6 +27,11 @@ class LaporanPembayaranSupplierResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Pembayaran Supplier';
     
     protected static ?string $slug = 'laporan-pembayaran-supplier';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::pembayaran::supplier') && Auth::user()->can('view_any_laporan::pembayaran::supplier');
+    }
 
     public static function canCreate(): bool
     {

@@ -63,7 +63,7 @@ class TransaksiKalkulasiPolicy
      */
     public function forceDelete(User $user, TransaksiKalkulasi $transaksiKalkulasi): bool
     {
-        return $user->can('force_delete_deskprint');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class TransaksiKalkulasiPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_deskprint');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class TransaksiKalkulasiPolicy
      */
     public function restore(User $user, TransaksiKalkulasi $transaksiKalkulasi): bool
     {
-        return $user->can('restore_deskprint');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class TransaksiKalkulasiPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_deskprint');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class TransaksiKalkulasiPolicy
      */
     public function replicate(User $user, TransaksiKalkulasi $transaksiKalkulasi): bool
     {
-        return $user->can('replicate_deskprint');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class TransaksiKalkulasiPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_deskprint');
+        return $user->can('{{ Reorder }}');
     }
 }

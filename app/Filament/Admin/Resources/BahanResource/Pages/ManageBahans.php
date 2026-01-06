@@ -2,16 +2,17 @@
 
 namespace App\Filament\Admin\Resources\BahanResource\Pages;
 
-use App\Filament\Admin\Resources\BahanResource;
 use App\Models\Bahan;
+use Filament\Actions;
+use App\Models\Satuan;
 use App\Models\BahanMutasi;
 use App\Models\BahanStokBatch;
-use App\Models\Satuan;
-use App\Enums\BahanMutasi\TipeEnum;
-use Filament\Actions;
-use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Support\Collection;
+use App\Enums\BahanMutasi\TipeEnum;
+use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ManageRecords;
+use App\Filament\Admin\Resources\BahanResource;
 
 class ManageBahans extends ManageRecords
 {
@@ -24,6 +25,7 @@ class ManageBahans extends ManageRecords
                 ->label('Import Excel')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('success')
+                ->visible(fn () => Auth::user()->can('import_bahan'))
                 ->processCollectionUsing(function (string $modelClass, Collection $collection) {
                     $imported = 0;
                     $errors = [];
@@ -145,7 +147,8 @@ class ManageBahans extends ManageRecords
                     
                     return $collection;
                 }),
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->visible(fn() => Auth::user()->can('create_bahan')),
         ];
     }
 }

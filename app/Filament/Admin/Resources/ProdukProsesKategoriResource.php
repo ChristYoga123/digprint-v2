@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class ProdukProsesKategoriResource extends Resource
 {
@@ -19,6 +20,11 @@ class ProdukProsesKategoriResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationLabel = 'Kategori Proses Produk';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_produk::proses::kategori') && Auth::user()->can('view_any_produk::proses::kategori');
+    }
 
     public static function form(Form $form): Form
     {
@@ -51,12 +57,15 @@ class ProdukProsesKategoriResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_produk::proses::kategori')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_produk::proses::kategori')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_produk::proses::kategori')),
                 ]),
             ]);
     }
@@ -68,3 +77,4 @@ class ProdukProsesKategoriResource extends Resource
         ];
     }
 }
+

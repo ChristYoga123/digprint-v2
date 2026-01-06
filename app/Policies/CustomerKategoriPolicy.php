@@ -63,7 +63,7 @@ class CustomerKategoriPolicy
      */
     public function forceDelete(User $user, CustomerKategori $customerKategori): bool
     {
-        return $user->can('force_delete_customer::kategori');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class CustomerKategoriPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_customer::kategori');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class CustomerKategoriPolicy
      */
     public function restore(User $user, CustomerKategori $customerKategori): bool
     {
-        return $user->can('restore_customer::kategori');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class CustomerKategoriPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_customer::kategori');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class CustomerKategoriPolicy
      */
     public function replicate(User $user, CustomerKategori $customerKategori): bool
     {
-        return $user->can('replicate_customer::kategori');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class CustomerKategoriPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_customer::kategori');
+        return $user->can('{{ Reorder }}');
     }
 }

@@ -63,7 +63,7 @@ class MesinPolicy
      */
     public function forceDelete(User $user, Mesin $mesin): bool
     {
-        return $user->can('force_delete_mesin');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class MesinPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_mesin');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class MesinPolicy
      */
     public function restore(User $user, Mesin $mesin): bool
     {
-        return $user->can('restore_mesin');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class MesinPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_mesin');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class MesinPolicy
      */
     public function replicate(User $user, Mesin $mesin): bool
     {
-        return $user->can('replicate_mesin');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class MesinPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_mesin');
+        return $user->can('{{ Reorder }}');
     }
 }

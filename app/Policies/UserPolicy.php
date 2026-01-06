@@ -84,7 +84,7 @@ class UserPolicy
      */
     public function forceDelete(User $user): bool
     {
-        return $user->can('force_delete_laporan::lembur::karyawan');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class UserPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_laporan::lembur::karyawan');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -106,7 +106,7 @@ class UserPolicy
      */
     public function restore(User $user): bool
     {
-        return $user->can('restore_laporan::lembur::karyawan');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -117,7 +117,7 @@ class UserPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_laporan::lembur::karyawan');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -128,7 +128,7 @@ class UserPolicy
      */
     public function replicate(User $user): bool
     {
-        return $user->can('replicate_laporan::lembur::karyawan');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -139,6 +139,6 @@ class UserPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_laporan::lembur::karyawan');
+        return $user->can('{{ Reorder }}');
     }
 }

@@ -63,7 +63,7 @@ class ProdukPolicy
      */
     public function forceDelete(User $user, Produk $produk): bool
     {
-        return $user->can('force_delete_produk');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class ProdukPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_produk');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class ProdukPolicy
      */
     public function restore(User $user, Produk $produk): bool
     {
-        return $user->can('restore_produk');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class ProdukPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_produk');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class ProdukPolicy
      */
     public function replicate(User $user, Produk $produk): bool
     {
-        return $user->can('replicate_produk');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class ProdukPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_produk');
+        return $user->can('{{ Reorder }}');
     }
 }

@@ -12,12 +12,18 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class SatuanResource extends Resource
 {
     protected static ?string $model = Satuan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_satuan') && Auth::user()->can('view_any_satuan');
+    }
 
     public static function form(Form $form): Form
     {
@@ -50,12 +56,15 @@ class SatuanResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_satuan')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_satuan')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_satuan')),
                 ]),
             ]);
     }
@@ -67,3 +76,4 @@ class SatuanResource extends Resource
         ];
     }
 }
+

@@ -34,6 +34,11 @@ class BahanMutasiResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path-rounded-square';
     protected static ?string $navigationLabel = 'Bahan Mutasi';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi') && Auth::user()->can('view_any_bahan::mutasi');
+    }
+
     public static function canEdit(Model $record): bool
     {
         return false;

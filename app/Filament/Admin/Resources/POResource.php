@@ -17,13 +17,32 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Filament\Admin\Resources\POResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class POResource extends Resource
+class POResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PO::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationLabel = 'PO Bahan';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_p::o') && Auth::user()->can('view_any_p::o');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'approve_po'
+        ];
+    }
 
     public static function form(Form $form): Form
     {
@@ -471,19 +490,20 @@ class POResource extends Resource
                             ->success()
                             ->send();
                     })
-                    ->visible(fn(PO $record) => $record->is_approved === null),
+                    ->visible(fn(PO $record) => $record->is_approved === null && Auth::user()->can('approve_po_p::o')),
                 Tables\Actions\EditAction::make()
                     ->after(function (PO $record) {
                         $record->total_harga_po_keseluruhan = $record->bahanPO->sum('total_harga_po');
                         $record->save();
                     })
-                    ->hidden(fn(PO $record) => $record->bahanMutasiFaktur),
+                    ->visible(fn(PO $record) => !$record->bahanMutasiFaktur && Auth::user()->can('update_p::o')),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn(PO $record) => $record->bahanMutasiFaktur),
+                    ->visible(fn(PO $record) => !$record->bahanMutasiFaktur && Auth::user()->can('delete_p::o')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_p::o')),
                 ]),
             ]);
     }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\SupplierResource\Pages;
 use App\Filament\Admin\Resources\SupplierResource\RelationManagers;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierResource extends Resource
 {
@@ -21,6 +22,11 @@ class SupplierResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Supplier';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_supplier') && Auth::user()->can('view_any_supplier');
+    }
 
     public static function form(Form $form): Form
     {
@@ -231,12 +237,15 @@ class SupplierResource extends Resource
                     ]),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_supplier')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_supplier')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_supplier')),
                 ]),
             ]);
     }

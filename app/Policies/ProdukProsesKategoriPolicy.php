@@ -63,7 +63,7 @@ class ProdukProsesKategoriPolicy
      */
     public function forceDelete(User $user, ProdukProsesKategori $produkProsesKategori): bool
     {
-        return $user->can('force_delete_produk::proses::kategori');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class ProdukProsesKategoriPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_produk::proses::kategori');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class ProdukProsesKategoriPolicy
      */
     public function restore(User $user, ProdukProsesKategori $produkProsesKategori): bool
     {
-        return $user->can('restore_produk::proses::kategori');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class ProdukProsesKategoriPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_produk::proses::kategori');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class ProdukProsesKategoriPolicy
      */
     public function replicate(User $user, ProdukProsesKategori $produkProsesKategori): bool
     {
-        return $user->can('replicate_produk::proses::kategori');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class ProdukProsesKategoriPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_produk::proses::kategori');
+        return $user->can('{{ Reorder }}');
     }
 }

@@ -63,7 +63,7 @@ class KloterPolicy
      */
     public function forceDelete(User $user, Kloter $kloter): bool
     {
-        return $user->can('force_delete_kloter');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class KloterPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_kloter');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class KloterPolicy
      */
     public function restore(User $user, Kloter $kloter): bool
     {
-        return $user->can('restore_kloter');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class KloterPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_kloter');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class KloterPolicy
      */
     public function replicate(User $user, Kloter $kloter): bool
     {
-        return $user->can('replicate_kloter');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class KloterPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_kloter');
+        return $user->can('{{ Reorder }}');
     }
 }

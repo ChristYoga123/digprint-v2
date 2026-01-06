@@ -63,7 +63,7 @@ class POPolicy
      */
     public function forceDelete(User $user, PO $pO): bool
     {
-        return $user->can('force_delete_p::o');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class POPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_p::o');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class POPolicy
      */
     public function restore(User $user, PO $pO): bool
     {
-        return $user->can('restore_p::o');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class POPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_p::o');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class POPolicy
      */
     public function replicate(User $user, PO $pO): bool
     {
-        return $user->can('replicate_p::o');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class POPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_p::o');
+        return $user->can('{{ Reorder }}');
     }
 }

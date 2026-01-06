@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Filament\Admin\Resources\LaporanPembelianHarianResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanPembelianHarianResource extends Resource
 {
@@ -27,6 +28,11 @@ class LaporanPembelianHarianResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Pembelian Harian';
     
     protected static ?string $slug = 'laporan-pembelian-harian';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::pembelian::harian') && Auth::user()->can('view_any_laporan::pembelian::harian');
+    }
 
     public static function canCreate(): bool
     {

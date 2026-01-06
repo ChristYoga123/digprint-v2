@@ -17,13 +17,34 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\PettyCashResource\Pages;
 use App\Filament\Admin\Resources\PettyCashResource\RelationManagers;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PettyCashResource extends Resource
+class PettyCashResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = PettyCash::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Petty Cash';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_petty::cash') && Auth::user()->can('view_any_petty::cash');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'approve_buka',
+            'approve_tutup',
+            'close_store'
+        ];
+    }
 
     public static function form(Form $form): Form
     {
@@ -126,9 +147,11 @@ class PettyCashResource extends Resource
                     ->label('Approval')
                     ->icon('heroicon-o-check-circle')
                     ->color('info')
+                    ->color('info')
                     ->visible(fn (PettyCash $record): bool => 
                         $record->status === StatusEnum::BUKA && 
-                        $record->approved_by_buka === null
+                        $record->approved_by_buka === null &&
+                        Auth::user()->can('approve_buka_petty::cash')
                     )
                     ->form([
                         Forms\Components\Placeholder::make('keterangan_buka_display')
@@ -202,7 +225,8 @@ class PettyCashResource extends Resource
                     ->color('info')
                     ->visible(fn (PettyCash $record): bool => 
                         $record->status === StatusEnum::TUTUP && 
-                        $record->approved_by_tutup === null
+                        $record->approved_by_tutup === null &&
+                        Auth::user()->can('approve_tutup_petty::cash')
                     )
                     ->form([
                         Forms\Components\Placeholder::make('keterangan_tutup_display')
@@ -278,7 +302,8 @@ class PettyCashResource extends Resource
                     ->color('danger')
                     ->visible(fn (PettyCash $record): bool => 
                         $record->status === StatusEnum::BUKA &&
-                        $record->approved_by_buka !== null // Hanya muncul jika sudah di-approve
+                        $record->approved_by_buka !== null && // Hanya muncul jika sudah di-approve
+                        Auth::user()->can('close_store_petty::cash')
                     )
                     ->form([
                         Forms\Components\TextInput::make('uang_tutup')
@@ -337,21 +362,25 @@ class PettyCashResource extends Resource
                 Tables\Actions\Action::make('view_transactions')
                     ->label('Lihat Transaksi')
                     ->icon('heroicon-o-eye')
-                    ->url(fn(PettyCash $record) => Pages\PettyCashDetailPage::getUrl(['record' => $record])),
+                    ->url(fn(PettyCash $record) => Pages\PettyCashDetailPage::getUrl(['record' => $record]))
+                    ->visible(fn () => Auth::user()->can('view_petty::cash')),
                 Tables\Actions\EditAction::make()
                     ->visible(fn (PettyCash $record): bool => 
                         $record->status === StatusEnum::BUKA &&
-                        $record->approved_by_buka === null // Hanya bisa edit jika belum di-approve
+                        $record->approved_by_buka === null && // Hanya bisa edit jika belum di-approve
+                        Auth::user()->can('update_petty::cash')
                     ),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (PettyCash $record): bool => 
                         $record->status === StatusEnum::BUKA && 
-                        $record->approved_by_buka === null
+                        $record->approved_by_buka === null &&
+                        Auth::user()->can('delete_petty::cash')
                     ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_petty::cash')),
                 ]),
             ]);
     }

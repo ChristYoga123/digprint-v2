@@ -63,7 +63,7 @@ class PencatatanKeuanganPolicy
      */
     public function forceDelete(User $user, PencatatanKeuangan $pencatatanKeuangan): bool
     {
-        return $user->can('force_delete_laporan::pembayaran::supplier');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class PencatatanKeuanganPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_laporan::pembayaran::supplier');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class PencatatanKeuanganPolicy
      */
     public function restore(User $user, PencatatanKeuangan $pencatatanKeuangan): bool
     {
-        return $user->can('restore_laporan::pembayaran::supplier');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class PencatatanKeuanganPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_laporan::pembayaran::supplier');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class PencatatanKeuanganPolicy
      */
     public function replicate(User $user, PencatatanKeuangan $pencatatanKeuangan): bool
     {
-        return $user->can('replicate_laporan::pembayaran::supplier');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class PencatatanKeuanganPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_laporan::pembayaran::supplier');
+        return $user->can('{{ Reorder }}');
     }
 }

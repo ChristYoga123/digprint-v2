@@ -26,13 +26,33 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\TransaksiResource\Pages;
 use App\Livewire\Admin\TransaksiResource\DetailPembayaranTable;
 use App\Filament\Admin\Resources\TransaksiResource\RelationManagers;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class TransaksiResource extends Resource
+class TransaksiResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = Transaksi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Transaksi';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_transaksi') && Auth::user()->can('view_any_transaksi');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'print_nota',
+            'pay'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -133,7 +153,8 @@ class TransaksiResource extends Resource
                             
                             // Use JavaScript to open in new tab
                             $livewire->js("window.open('{$url}', '_blank');");
-                        }),
+                        })
+                        ->visible(fn () => Auth::user()->can('print_nota_transaksi')),
                     Tables\Actions\ViewAction::make()
                         ->label('Lihat Ringkasan Biaya')
                         ->icon('heroicon-o-document-text')
@@ -265,19 +286,22 @@ class TransaksiResource extends Resource
                             return new HtmlString($html);
                         })
                         ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Tutup'),
+                        ->modalCancelActionLabel('Tutup')
+                        ->visible(fn () => Auth::user()->can('view_transaksi')),
                     Tables\Actions\Action::make('detail_transaksi')
                         ->label('Detail Transaksi')
                         ->icon('heroicon-o-document-text')
                         ->color('info')
-                        ->url(fn(Transaksi $record) => Pages\TransaksiDetailPage::getUrl(['record' => $record->id])),
+                        ->url(fn(Transaksi $record) => Pages\TransaksiDetailPage::getUrl(['record' => $record->id]))
+                        ->visible(fn () => Auth::user()->can('view_transaksi')),
                     Tables\Actions\Action::make('detail_pembayaran')
                         ->label('Detail Pembayaran')
                         ->icon('heroicon-o-credit-card')
                         ->color('gray')
                         ->infolist(fn(Transaksi $record) => [
                             Livewire::make(DetailPembayaranTable::class, ['transaksi' => $record]),
-                        ]),
+                        ])
+                        ->visible(fn () => Auth::user()->can('view_transaksi')),
                     Tables\Actions\Action::make('bayar_top')
                         ->label('Bayar TOP')
                         ->icon('heroicon-o-currency-dollar')
@@ -286,11 +310,14 @@ class TransaksiResource extends Resource
                             // Cek apakah status pembayaran adalah TOP
                             // Handle baik enum instance maupun string value
                             $status = $record->status_pembayaran;
+                            $isTop = false;
                             if ($status instanceof StatusPembayaranEnum) {
-                                return $status === StatusPembayaranEnum::TERM_OF_PAYMENT;
+                                $isTop = $status === StatusPembayaranEnum::TERM_OF_PAYMENT;
+                            } else {
+                                // Fallback: bandingkan dengan value jika masih string
+                                $isTop = $status === StatusPembayaranEnum::TERM_OF_PAYMENT->value;
                             }
-                            // Fallback: bandingkan dengan value jika masih string
-                            return $status === StatusPembayaranEnum::TERM_OF_PAYMENT->value;
+                            return $isTop && Auth::user()->can('pay_transaksi');
                         })
                         ->form([
                             Forms\Components\Select::make('metode_pembayaran')

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Admin\Resources\LaporanKasPemasukanResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanKasPemasukanResource extends Resource
 {
@@ -26,6 +27,11 @@ class LaporanKasPemasukanResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Kas Pemasukan';
     
     protected static ?string $slug = 'laporan-kas-pemasukan';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::kas::pemasukan') && Auth::user()->can('view_any_laporan::kas::pemasukan');
+    }
 
     public static function canCreate(): bool
     {

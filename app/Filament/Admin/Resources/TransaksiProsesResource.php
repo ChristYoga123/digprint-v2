@@ -12,12 +12,18 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class TransaksiProsesResource extends Resource
 {
     protected static ?string $model = TransaksiProses::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_transaksi::proses') && Auth::user()->can('view_any_transaksi::proses');
+    }
 
     public static function form(Form $form): Form
     {
@@ -71,12 +77,15 @@ class TransaksiProsesResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_transaksi::proses')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_transaksi::proses')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_transaksi::proses')),
                 ]),
             ]);
     }

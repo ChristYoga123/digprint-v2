@@ -63,7 +63,7 @@ class BahanMutasiFakturPolicy
      */
     public function forceDelete(User $user, BahanMutasiFaktur $bahanMutasiFaktur): bool
     {
-        return $user->can('force_delete_laporan::pembelian::harian');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class BahanMutasiFakturPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_laporan::pembelian::harian');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class BahanMutasiFakturPolicy
      */
     public function restore(User $user, BahanMutasiFaktur $bahanMutasiFaktur): bool
     {
-        return $user->can('restore_laporan::pembelian::harian');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class BahanMutasiFakturPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_laporan::pembelian::harian');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class BahanMutasiFakturPolicy
      */
     public function replicate(User $user, BahanMutasiFaktur $bahanMutasiFaktur): bool
     {
-        return $user->can('replicate_laporan::pembelian::harian');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class BahanMutasiFakturPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_laporan::pembelian::harian');
+        return $user->can('{{ Reorder }}');
     }
 }

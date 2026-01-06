@@ -12,11 +12,17 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class MesinResource extends Resource
 {
     protected static ?string $model = Mesin::class;
     protected static ?string $navigationIcon = 'heroicon-o-computer-desktop';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_mesin') && Auth::user()->can('view_any_mesin');
+    }
 
     public static function form(Form $form): Form
     {
@@ -58,12 +64,15 @@ class MesinResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user()->can('update_mesin')),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn () => Auth::user()->can('delete_mesin')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_mesin')),
                 ]),
             ]);
     }
@@ -75,3 +84,4 @@ class MesinResource extends Resource
         ];
     }
 }
+

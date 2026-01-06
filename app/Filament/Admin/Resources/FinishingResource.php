@@ -27,8 +27,9 @@ use Filament\Forms\Components\CheckboxList;
 use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Filament\Admin\Resources\FinishingResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class FinishingResource extends Resource
+class FinishingResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = TransaksiProduk::class;
 
@@ -39,6 +40,22 @@ class FinishingResource extends Resource
     protected static ?string $modelLabel = 'Finishing';
     
     protected static ?int $navigationSort = 33;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_finishing') && Auth::user()->can('view_any_finishing');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'start_work',
+            'send_sample',
+            'complete'
+        ];
+    }
 
     public static function canCreate(): bool
     {
@@ -151,12 +168,13 @@ class FinishingResource extends Resource
                     ->modalDescription('Mulai semua proses finishing/addon untuk produk ini?')
                     ->visible(function(TransaksiProduk $record) {
                         // Cek apakah ada proses finishing yang masih BELUM
-                        return $record->transaksiProses
+                        $hasUnstarted = $record->transaksiProses
                             ->contains(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
                                 && !$tp->apakah_menggunakan_subjoin
                             );
+                        return $hasUnstarted && Auth::user()->can('start_work_finishing');
                     })
                     ->action(function(TransaksiProduk $record) {
                         // Update semua proses finishing yang BELUM menjadi DALAM_PROSES
@@ -207,7 +225,7 @@ class FinishingResource extends Resource
                     ->modalSubmitActionLabel('Kirim Sample')
                     ->visible(function(TransaksiProduk $record) {
                         // Tampilkan jika ada proses addon yang perlu sample approval DAN sudah dimulai
-                        return $record->transaksiProses
+                        $hasSampleNeeded = $record->transaksiProses
                             ->contains(fn($tp) => 
                                 $tp->produkProses?->produk_proses_kategori_id == 3 
                                 && $tp->apakah_perlu_sample_approval
@@ -215,6 +233,7 @@ class FinishingResource extends Resource
                                 && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             );
+                        return $hasSampleNeeded && Auth::user()->can('send_sample_finishing');
                     })
                     ->action(function(TransaksiProduk $record) {
                         try {
@@ -261,7 +280,7 @@ class FinishingResource extends Resource
                                 && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             );
-                        return $nonSubjoinAddons->isNotEmpty();
+                        return $nonSubjoinAddons->isNotEmpty() && Auth::user()->can('complete_finishing');
                     })
                     ->form(function(TransaksiProduk $record) {
                         // Hanya tampilkan addon yang bukan subjoin dan sudah dimulai (DALAM_PROSES)

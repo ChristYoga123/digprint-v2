@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use App\Enums\KaryawanPekerjaan\TipeEnum;
 use App\Filament\Admin\Resources\LaporanKerjaKaryawanResource\Pages;
 use App\Filament\Admin\Resources\LaporanKerjaKaryawanResource\Widgets\StatKerjaKaryawanWidget;
+use Illuminate\Support\Facades\Auth;
 
 class LaporanKerjaKaryawanResource extends Resource
 {
@@ -24,6 +25,11 @@ class LaporanKerjaKaryawanResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Kerja Karyawan';
     
     protected static ?string $slug = 'laporan-kerja-karyawan';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::kerja::karyawan') && Auth::user()->can('view_any_laporan::kerja::karyawan');
+    }
 
     public static function table(Table $table): Table
     {
@@ -82,7 +88,8 @@ class LaporanKerjaKaryawanResource extends Resource
                     ->label('Lihat Detail')
                     ->icon('heroicon-o-eye')
                     ->color('primary')
-                    ->url(fn (User $record) => static::getUrl('detail', ['record' => $record->id])),
+                    ->url(fn (User $record) => static::getUrl('detail', ['record' => $record->id]))
+                    ->visible(fn () => Auth::user()->can('view_laporan::kerja::karyawan')),
             ])
             ->bulkActions([]);
     }

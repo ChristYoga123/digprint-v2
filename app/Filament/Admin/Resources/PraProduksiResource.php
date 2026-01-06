@@ -15,8 +15,10 @@ use Filament\Notifications\Notification;
 use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Filament\Admin\Resources\PraProduksiResource\Pages;
+use Illuminate\Support\Facades\Auth;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PraProduksiResource extends Resource
+class PraProduksiResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = TransaksiProduk::class;
 
@@ -25,7 +27,22 @@ class PraProduksiResource extends Resource
     protected static ?string $navigationLabel = 'Pra Produksi';
     
     protected static ?string $modelLabel = 'Pra Produksi';
-    
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_pra::produksi') && Auth::user()->can('view_any_pra::produksi');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'start_work',
+            'approve_design'
+        ];
+    }
+
     public static function canCreate(): bool
     {
         return false;
@@ -122,7 +139,7 @@ class PraProduksiResource extends Resource
                     ->modalDescription('Mulai proses design untuk transaksi ini?')
                     ->visible(function(TransaksiProduk $record) {
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses && $designProses->status_proses === StatusProsesEnum::BELUM;
+                        return $designProses && $designProses->status_proses === StatusProsesEnum::BELUM && Auth::user()->can('start_work_pra::produksi');
                     })
                     ->action(function(TransaksiProduk $record) {
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
@@ -157,7 +174,8 @@ class PraProduksiResource extends Resource
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
                         return $designProses 
                             && !$designProses->apakah_menggunakan_subjoin
-                            && $designProses->status_proses === StatusProsesEnum::DALAM_PROSES; // Hanya tampil jika sedang diproses
+                            && $designProses->status_proses === StatusProsesEnum::DALAM_PROSES
+                            && Auth::user()->can('approve_design_pra::produksi'); // Hanya tampil jika sedang diproses
                     })
                     ->action(function(TransaksiProduk $record, array $data) {
                         try {

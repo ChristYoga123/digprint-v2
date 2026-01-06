@@ -18,8 +18,9 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Enums\KaryawanPekerjaan\TipeEnum;
 use App\Filament\Admin\Resources\PengajuanLemburResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class PengajuanLemburResource extends Resource
+class PengajuanLemburResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = KaryawanPekerjaan::class;
 
@@ -28,6 +29,25 @@ class PengajuanLemburResource extends Resource
     protected static ?string $navigationLabel = 'Pengajuan Lembur';
     
     protected static ?string $modelLabel = 'Pengajuan Lembur';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_pengajuan::lembur') && Auth::user()->can('view_any_pengajuan::lembur');
+    }
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'approve',
+            'reject'
+        ];
+    }
 
     public static function form(Form $form): Form
     {
@@ -153,7 +173,7 @@ class PengajuanLemburResource extends Resource
                     ->modalDescription(fn (KaryawanPekerjaan $record) => 
                         "Setujui lembur untuk {$record->karyawan->name}?"
                     )
-                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null)
+                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null && Auth::user()->can('approve_pengajuan::lembur'))
                     ->action(function (KaryawanPekerjaan $record) {
                         $record->update([
                             'apakah_diapprove_lembur' => true,
@@ -175,7 +195,7 @@ class PengajuanLemburResource extends Resource
                     ->modalDescription(fn (KaryawanPekerjaan $record) => 
                         "Tolak lembur untuk {$record->karyawan->name}?"
                     )
-                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null)
+                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null && Auth::user()->can('reject_pengajuan::lembur'))
                     ->action(function (KaryawanPekerjaan $record) {
                         $record->update([
                             'apakah_diapprove_lembur' => false,
@@ -189,9 +209,9 @@ class PengajuanLemburResource extends Resource
                             ->send();
                     }),
                 Tables\Actions\EditAction::make()
-                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null),
+                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null && Auth::user()->can('update_pengajuan::lembur')),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null),
+                    ->visible(fn (KaryawanPekerjaan $record) => $record->apakah_diapprove_lembur === null && Auth::user()->can('delete_pengajuan::lembur')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -247,7 +267,8 @@ class PengajuanLemburResource extends Resource
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_pengajuan::lembur')),
                 ]),
             ])
             ->headerActions([
@@ -292,6 +313,7 @@ class PengajuanLemburResource extends Resource
                     }),
                 Tables\Actions\CreateAction::make()
                     ->label('Tambah Lembur')
+                    ->visible(fn () => Auth::user()->can('create_pengajuan::lembur'))
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['tipe'] = TipeEnum::LEMBUR;
                         return $data;

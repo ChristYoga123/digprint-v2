@@ -35,6 +35,11 @@ class KloterResource extends Resource
     
     protected static ?string $navigationLabel = 'Kloter';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_kloter') && Auth::user()->can('view_any_kloter');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -131,7 +136,7 @@ class KloterResource extends Resource
                     ->label('Selesaikan')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF)
+                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF && Auth::user()->can('update_kloter'))
                     ->requiresConfirmation()
                     ->modalHeading('Selesaikan Kloter')
                     ->modalDescription(fn (Kloter $record) => 'Tandai kloter ' . $record->kode . ' sebagai selesai?')
@@ -174,13 +179,14 @@ class KloterResource extends Resource
                         }
                     }),
                 EditAction::make()
-                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF),
+                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF && Auth::user()->can('update_kloter')),
                 DeleteAction::make()
-                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF),
+                    ->visible(fn (Kloter $record) => $record->status === KloterStatusEnum::AKTIF && Auth::user()->can('delete_kloter')),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->can('delete_any_kloter')),
                 ]),
             ]);
     }

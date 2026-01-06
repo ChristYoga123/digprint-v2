@@ -31,7 +31,7 @@ class TransaksiProdukPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_pra::produksi');
+        return $user->can('{{ Create }}');
     }
 
     /**
@@ -39,7 +39,7 @@ class TransaksiProdukPolicy
      */
     public function update(User $user, TransaksiProduk $transaksiProduk): bool
     {
-        return $user->can('update_pra::produksi');
+        return $user->can('{{ Update }}');
     }
 
     /**
@@ -47,7 +47,7 @@ class TransaksiProdukPolicy
      */
     public function delete(User $user, TransaksiProduk $transaksiProduk): bool
     {
-        return $user->can('delete_pra::produksi');
+        return $user->can('{{ Delete }}');
     }
 
     /**
@@ -55,7 +55,7 @@ class TransaksiProdukPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_pra::produksi');
+        return $user->can('{{ DeleteAny }}');
     }
 
     /**
@@ -63,7 +63,7 @@ class TransaksiProdukPolicy
      */
     public function forceDelete(User $user, TransaksiProduk $transaksiProduk): bool
     {
-        return $user->can('force_delete_pra::produksi');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class TransaksiProdukPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_pra::produksi');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class TransaksiProdukPolicy
      */
     public function restore(User $user, TransaksiProduk $transaksiProduk): bool
     {
-        return $user->can('restore_pra::produksi');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class TransaksiProdukPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_pra::produksi');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class TransaksiProdukPolicy
      */
     public function replicate(User $user, TransaksiProduk $transaksiProduk): bool
     {
-        return $user->can('replicate_pra::produksi');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class TransaksiProdukPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_pra::produksi');
+        return $user->can('{{ Reorder }}');
     }
 }

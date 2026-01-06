@@ -31,7 +31,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_pengajuan::subjoin');
+        return $user->can('{{ Create }}');
     }
 
     /**
@@ -39,7 +39,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function update(User $user, TransaksiProdukSubjoin $transaksiProdukSubjoin): bool
     {
-        return $user->can('update_pengajuan::subjoin');
+        return $user->can('{{ Update }}');
     }
 
     /**
@@ -47,7 +47,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function delete(User $user, TransaksiProdukSubjoin $transaksiProdukSubjoin): bool
     {
-        return $user->can('delete_pengajuan::subjoin');
+        return $user->can('{{ Delete }}');
     }
 
     /**
@@ -55,7 +55,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_pengajuan::subjoin');
+        return $user->can('{{ DeleteAny }}');
     }
 
     /**
@@ -63,7 +63,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function forceDelete(User $user, TransaksiProdukSubjoin $transaksiProdukSubjoin): bool
     {
-        return $user->can('force_delete_pengajuan::subjoin');
+        return $user->can('{{ ForceDelete }}');
     }
 
     /**
@@ -71,7 +71,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_pengajuan::subjoin');
+        return $user->can('{{ ForceDeleteAny }}');
     }
 
     /**
@@ -79,7 +79,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function restore(User $user, TransaksiProdukSubjoin $transaksiProdukSubjoin): bool
     {
-        return $user->can('restore_pengajuan::subjoin');
+        return $user->can('{{ Restore }}');
     }
 
     /**
@@ -87,7 +87,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_pengajuan::subjoin');
+        return $user->can('{{ RestoreAny }}');
     }
 
     /**
@@ -95,7 +95,7 @@ class TransaksiProdukSubjoinPolicy
      */
     public function replicate(User $user, TransaksiProdukSubjoin $transaksiProdukSubjoin): bool
     {
-        return $user->can('replicate_pengajuan::subjoin');
+        return $user->can('{{ Replicate }}');
     }
 
     /**
@@ -103,6 +103,6 @@ class TransaksiProdukSubjoinPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_pengajuan::subjoin');
+        return $user->can('{{ Reorder }}');
     }
 }
