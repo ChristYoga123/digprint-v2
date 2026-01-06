@@ -80,7 +80,7 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
                             ->whereHas('produkProses', function($q) {
                                 $q->where('produk_proses_kategori_id', 1); // Design
                             })
-                            ->where('status_proses', StatusProsesEnum::BELUM)
+                            ->whereIn('status_proses', [StatusProsesEnum::BELUM, StatusProsesEnum::DALAM_PROSES])
                             ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin
                     })
                     ->with([
@@ -120,6 +120,18 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
                             ? "{$record->panjang} x {$record->lebar} cm" 
                             : '-'
                     ),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->getStateUsing(function(TransaksiProduk $record) {
+                        $designProses = $record->transaksiProses->where('urutan', 1)->first();
+                        return $designProses?->status_proses?->getLabel() ?? '-';
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match($state) {
+                        'Belum' => 'gray',
+                        'Dalam Proses' => 'warning',
+                        default => 'gray',
+                    }),
                 TextColumn::make('transaksi.created_at')
                     ->label('Tanggal Order')
                     ->dateTime('d M Y')
