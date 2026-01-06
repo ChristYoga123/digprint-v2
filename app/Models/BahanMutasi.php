@@ -11,6 +11,7 @@ class BahanMutasi extends Model
 
     protected $casts = [
         'tipe' => TipeEnum::class,
+        'jumlah_mutasi' => 'float',
     ];
 
     public function bahan()

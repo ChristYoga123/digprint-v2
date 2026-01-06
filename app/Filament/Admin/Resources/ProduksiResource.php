@@ -155,7 +155,7 @@ class ProduksiResource extends Resource implements HasShieldPermissions
                     ->color('warning'),
                 TextColumn::make('status_proses')
                     ->label('Status')
-                    ->badge(),
+                    ->badge(StatusProsesEnum::class),
                 TextColumn::make('kloter.kode')
                     ->label('Kloter')
                     ->badge()
@@ -320,8 +320,8 @@ class ProduksiResource extends Resource implements HasShieldPermissions
                                     
                                     // Jika dipengaruhi dimensi, hitung: (panjang x lebar) x jumlah
                                     if ($dipengaruhiDimensi) {
-                                        $panjang = $transaksiProduk->panjang ?? 0;
-                                        $lebar = $transaksiProduk->lebar ?? 0;
+                                        $panjang = (float) ($transaksiProduk->panjang ?? 0);
+                                        $lebar = (float) ($transaksiProduk->lebar ?? 0);
                                         
                                         // Tambahkan 0.05m (5cm) untuk kelebihan/toleransi
                                         $panjangDenganToleransi = $panjang + 0.05;

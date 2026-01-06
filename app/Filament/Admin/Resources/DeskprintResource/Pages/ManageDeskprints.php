@@ -123,6 +123,14 @@ class ManageDeskprints extends ManageRecords
                 }
             }
 
+            // Cek Harga Minimal Produk
+            $produkModel = \App\Models\Produk::find($produk->produk_id);
+            if ($produkModel && $produkModel->harga_minimal > 0) {
+                if ($totalProduk < $produkModel->harga_minimal) {
+                    $totalProduk = (float) $produkModel->harga_minimal;
+                }
+            }
+
             // Update total_harga_produk
             $produk->update([
                 'total_harga_produk' => (int) round($totalProduk)

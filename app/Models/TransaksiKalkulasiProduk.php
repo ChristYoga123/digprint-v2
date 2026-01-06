@@ -11,6 +11,8 @@ class TransaksiKalkulasiProduk extends Model
     protected $casts = [
         'addons' => 'json',
         'proses_perlu_sample_approval' => 'json',
+        'panjang' => 'float',
+        'lebar' => 'float',
     ];
 
     public function transaksiKalkulasi()

@@ -161,12 +161,14 @@ class FinishingResource extends Resource implements HasShieldPermissions
                                 && !$tp->apakah_menggunakan_subjoin
                             )
                             ->first();
-                        return $unfinishedAddon?->status_proses?->getLabel() ?? '-';
+                        return $unfinishedAddon?->status_proses ?? null;
                     })
                     ->badge()
-                    ->color(fn(string $state): string => match($state) {
+                    ->formatStateUsing(fn($state) => $state?->getLabel() ?? '-')
+                    ->color(fn($state) => match($state?->value ?? null) {
                         'Belum' => 'gray',
                         'Dalam Proses' => 'warning',
+                        'Selesai' => 'success',
                         default => 'gray',
                     }),
                 TextColumn::make('transaksi.created_at')
@@ -354,8 +356,8 @@ class FinishingResource extends Resource implements HasShieldPermissions
                                         
                                         // Jika dipengaruhi dimensi, hitung: (panjang + 0.05m) x (lebar + 0.05m) x jumlah
                                         if ($dipengaruhiDimensi) {
-                                            $panjang = $record->panjang ?? 0;
-                                            $lebar = $record->lebar ?? 0;
+                                            $panjang = (float) ($record->panjang ?? 0);
+                                            $lebar = (float) ($record->lebar ?? 0);
                                             
                                             // Tambahkan 0.05m (5cm) untuk kelebihan/toleransi
                                             $panjangDenganToleransi = $panjang + 0.05;

@@ -630,7 +630,7 @@ class BahanMutasiResource extends Resource
                     ->label('Tipe')
                     ->badge(TipeEnum::class)
                     ->sortable()
-                    ->description(fn(BahanMutasi $record) => Carbon::parse($record->created_at)->format('d F Y')),
+                    ->description(fn(BahanMutasi $record) => Carbon::parse($record->created_at)->format('d F Y H:i:s')),
                 Tables\Columns\TextColumn::make('bahan.nama')
                     ->label('Bahan')
                     ->searchable()

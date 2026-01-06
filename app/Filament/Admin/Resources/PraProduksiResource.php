@@ -124,12 +124,14 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
                     ->label('Status')
                     ->getStateUsing(function(TransaksiProduk $record) {
                         $designProses = $record->transaksiProses->where('urutan', 1)->first();
-                        return $designProses?->status_proses?->getLabel() ?? '-';
+                        return $designProses?->status_proses ?? null;
                     })
                     ->badge()
-                    ->color(fn(string $state): string => match($state) {
+                    ->formatStateUsing(fn($state) => $state?->getLabel() ?? '-')
+                    ->color(fn($state) => match($state?->value ?? null) {
                         'Belum' => 'gray',
                         'Dalam Proses' => 'warning',
+                        'Selesai' => 'success',
                         default => 'gray',
                     }),
                 TextColumn::make('transaksi.created_at')

@@ -11,6 +11,8 @@ class TransaksiProduk extends Model
     protected $casts = [
         'addons' => 'json',
         'status' => \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::class,
+        'panjang' => 'float',
+        'lebar' => 'float',
     ];
 
     public function transaksi()

@@ -979,6 +979,14 @@ class DeskprintResource extends Resource
                                             }
                                         }
                                         
+                                        // Cek Harga Minimal Produk
+                                        $produkModel = Produk::find($produk['produk_id']);
+                                        if ($produkModel && $produkModel->harga_minimal > 0) {
+                                            if ($totalProduk < $produkModel->harga_minimal) {
+                                                $totalProduk = (float) $produkModel->harga_minimal;
+                                            }
+                                        }
+                                        
                                         $totalKeseluruhan += $totalProduk;
                                         
                                         // Update total_harga_produk untuk setiap item
@@ -1224,6 +1232,12 @@ class DeskprintResource extends Resource
                 'total_harga_produk' => (int) round($totalProduk)
             ]);
         }
+        
+        // Recalculate total_harga_kalkulasi dari semua produk yang sudah diupdate
+        $totalKeseluruhan = $record->transaksiKalkulasiProduks()->sum('total_harga_produk');
+        $record->update([
+            'total_harga_kalkulasi' => (int) round($totalKeseluruhan)
+        ]);
     }
 
     public static function table(Table $table): Table
