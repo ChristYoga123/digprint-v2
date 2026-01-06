@@ -964,7 +964,7 @@ class DeskprintResource extends Resource
                                             }
                                         }
                                         
-                                        // Tambah harga addon
+                                        // Tambah harga addon (dikali jumlah pesanan)
                                         // Data dari form akan selalu array atau null
                                         if (isset($produk['addons']) && is_array($produk['addons']) && !empty($produk['addons'])) {
                                             // Filter untuk memastikan semua ID adalah integer positif
@@ -975,7 +975,7 @@ class DeskprintResource extends Resource
                                                     ->where('produk_proses_kategori_id', 3) // Finishing/Addon
                                                     ->whereNotNull('harga')
                                                     ->sum('harga');
-                                                $totalProduk += (float) $totalAddon;
+                                                $totalProduk += (float) ($totalAddon * $jumlahFloat);
                                             }
                                         }
                                         
@@ -1128,7 +1128,7 @@ class DeskprintResource extends Resource
             }
         }
         
-        // Tambah harga addon
+        // Tambah harga addon (dikali jumlah pesanan)
         // Laravel akan otomatis decode JSON ke array karena cast 'json' di model
         // Di sini data dari form akan selalu array, atau null
         if (isset($data['addons']) && is_array($data['addons']) && !empty($data['addons'])) {
@@ -1140,7 +1140,7 @@ class DeskprintResource extends Resource
                     ->where('produk_proses_kategori_id', 3) // Finishing/Addon
                     ->whereNotNull('harga')
                     ->sum('harga');
-                $totalProduk += (float) $totalAddon;
+                $totalProduk += (float) ($totalAddon * $jumlahFloat);
             }
         }
 

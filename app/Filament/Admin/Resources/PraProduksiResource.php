@@ -207,6 +207,8 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
 
                             $designProses->update([
                                 'status_proses' => StatusProsesEnum::SELESAI->value,
+                                'completed_by' => Auth::id(),
+                                'completed_at' => now(),
                             ]);
 
                             $record->transaksi->update([

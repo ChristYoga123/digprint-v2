@@ -104,6 +104,34 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                             return new HtmlString('<span style="color: red;" class="font-bold">Tagihan: ' . formatRupiah($sisa) . '</span>');
                         }
                     }),
+                Tables\Columns\TextColumn::make('dikerjakan_oleh')
+                    ->label('Dikerjakan Oleh')
+                    ->getStateUsing(function(Transaksi $record) {
+                        $workers = [];
+                        
+                        // Get Deskprint creator from TransaksiKalkulasi
+                        if ($record->transaksiKalkulasi) {
+                            $deskprintWorker = \App\Models\KaryawanPekerjaan::where('karyawan_pekerjaan_type', \App\Models\TransaksiKalkulasi::class)
+                                ->where('karyawan_pekerjaan_id', $record->transaksiKalkulasi->id)
+                                ->with('karyawan')
+                                ->first();
+                            if ($deskprintWorker && $deskprintWorker->karyawan) {
+                                $workers[] = "Deskprint: {$deskprintWorker->karyawan->name}";
+                            }
+                        }
+                        
+                        // Get Kasir from Transaksi
+                        $kasirWorker = \App\Models\KaryawanPekerjaan::where('karyawan_pekerjaan_type', \App\Models\Transaksi::class)
+                            ->where('karyawan_pekerjaan_id', $record->id)
+                            ->with('karyawan')
+                            ->first();
+                        if ($kasirWorker && $kasirWorker->karyawan) {
+                            $workers[] = "Kasir: {$kasirWorker->karyawan->name}";
+                        }
+                        
+                        return !empty($workers) ? implode("\n", $workers) : '-';
+                    })
+                    ->wrap(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
                     ->dateTime('d M Y')

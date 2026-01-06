@@ -60,9 +60,11 @@ class Transaksi extends Model
             return;
         }
 
-        // Cek semua status
-        // Jika semua produk sudah STATUS SIAP DIAMBIL atau SELESAI -> Transaksi Selesai
-        $allFinished = $statuses->every(fn($s) => in_array($s, [
+        // Cek apakah semua produk sudah SELESAI (pelanggan sudah mengambil)
+        $allSelesai = $statuses->every(fn($s) => $s === \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI->value);
+        
+        // Cek apakah semua produk sudah SIAP_DIAMBIL atau SELESAI
+        $allSiapDiambilOrSelesai = $statuses->every(fn($s) => in_array($s, [
             \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SIAP_DIAMBIL->value,
             \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI->value
         ]));
@@ -74,8 +76,12 @@ class Transaksi extends Model
             \App\Enums\TransaksiProduk\StatusTransaksiProdukEnum::SELESAI->value
         ]));
 
-        if ($allFinished) {
+        if ($allSelesai) {
+            // Semua produk sudah diambil pelanggan
             $this->update(['status_transaksi' => StatusTransaksiEnum::SELESAI]);
+        } elseif ($allSiapDiambilOrSelesai) {
+            // Semua produk siap diambil (belum tentu sudah diambil semua)
+            $this->update(['status_transaksi' => StatusTransaksiEnum::SIAP_DIAMBIL]);
         } elseif ($anyProses) {
             $this->update(['status_transaksi' => StatusTransaksiEnum::DALAM_PROSES]);
         } else {

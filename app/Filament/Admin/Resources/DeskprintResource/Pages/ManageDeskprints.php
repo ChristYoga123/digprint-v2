@@ -108,7 +108,7 @@ class ManageDeskprints extends ManageRecords
                 }
             }
 
-            // Tambah harga addon
+            // Tambah harga addon (dikali jumlah pesanan)
             // Model sudah punya cast 'addons' => 'json', jadi Laravel auto-decode JSON ke array
             if ($produk->addons && is_array($produk->addons) && !empty($produk->addons)) {
                 // Filter untuk memastikan semua ID adalah integer positif
@@ -119,7 +119,7 @@ class ManageDeskprints extends ManageRecords
                         ->where('produk_proses_kategori_id', 3) // Finishing/Addon
                         ->whereNotNull('harga')
                         ->sum('harga');
-                    $totalProduk += (float) $totalAddon;
+                    $totalProduk += (float) ($totalAddon * $jumlahFloat);
                 }
             }
 
@@ -212,7 +212,7 @@ class ManageDeskprints extends ManageRecords
                 }
             }
 
-            // Tambah harga addon
+            // Tambah harga addon (dikali jumlah pesanan)
             // Data dari form akan selalu array atau null
             if (isset($produk['addons']) && is_array($produk['addons']) && !empty($produk['addons'])) {
                 // Filter untuk memastikan semua ID adalah integer positif
@@ -223,7 +223,7 @@ class ManageDeskprints extends ManageRecords
                         ->where('produk_proses_kategori_id', 3) // Finishing/Addon
                         ->whereNotNull('harga')
                         ->sum('harga');
-                    $totalProduk += (float) $totalAddon;
+                    $totalProduk += (float) ($totalAddon * $jumlahFloat);
                 }
             }
 

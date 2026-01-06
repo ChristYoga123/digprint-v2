@@ -665,6 +665,11 @@ class KasirPage extends Page implements HasTable, HasForms
                         $urutan++;
                     }
                 }
+                
+                // Refresh status untuk setiap TransaksiProduk setelah semua proses dibuat
+                // Ini penting untuk produk yang langsung selesai (apakah_langsung_selesai = true)
+                $transaksiProduk->refresh();
+                $transaksiProduk->refreshStatus();
             }
             
             // Update transaksis dengan link_design jika ada
