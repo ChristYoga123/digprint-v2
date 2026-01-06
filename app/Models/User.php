@@ -58,15 +58,7 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        if($panel->getId() === 'admin') {
-            return Auth::user()->hasRole('super_admin');
-        }
-
-        if($panel->getId() === 'ppic') {
-            return Auth::user()->hasRole('ppic');
-        }
-
-        return false;
+        return true;
     }
 
     public function mesins()
