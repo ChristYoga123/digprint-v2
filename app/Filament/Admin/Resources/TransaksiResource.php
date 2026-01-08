@@ -492,6 +492,136 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                                     ->send();
                             }
                         }),
+                    Tables\Actions\Action::make('refund')
+                        ->label('Refund')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Konfirmasi Refund')
+                        ->modalDescription(function (Transaksi $record) {
+                            $totalDibayar = $record->pencatatanKeuangans->sum('jumlah_bayar');
+                            if ($totalDibayar <= 0) {
+                                return 'Tidak ada pembayaran yang bisa di-refund.';
+                            }
+                            return new HtmlString(
+                                '<div class="text-danger-600 font-bold mb-2">⚠️ PERHATIAN!</div>' .
+                                '<p>Anda akan me-refund transaksi <strong>' . $record->kode . '</strong></p>' .
+                                '<p>Total yang akan di-refund: <strong class="text-danger-600">' . formatRupiah($totalDibayar) . '</strong></p>' .
+                                '<p class="text-sm text-gray-500 mt-2">Uang akan dikurangi dari wallet yang sesuai (Kas Pemasukan / DP).</p>'
+                            );
+                        })
+                        ->modalSubmitActionLabel('Ya, Refund Sekarang')
+                        ->visible(function (Transaksi $record) {
+                            // Tombol refund hanya muncul jika:
+                            // 1. Status transaksi masih BELUM dikerjakan
+                            // 2. Ada pembayaran yang sudah masuk
+                            $status = $record->status_transaksi;
+                            $isBelum = false;
+                            if ($status instanceof StatusTransaksiEnum) {
+                                $isBelum = $status === StatusTransaksiEnum::BELUM;
+                            } else {
+                                $isBelum = $status === StatusTransaksiEnum::BELUM->value;
+                            }
+                            
+                            $totalDibayar = $record->pencatatanKeuangans->sum('jumlah_bayar');
+                            $hasPayment = $totalDibayar > 0;
+                            
+                            // Juga hidden jika ada diskon belum di-approve
+                            $hasUnapprovedDiscount = $record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null;
+                            
+                            return $isBelum && $hasPayment && !$hasUnapprovedDiscount && Auth::user()->can('pay_transaksi');
+                        })
+                        ->action(function (Transaksi $record) {
+                            $totalDibayar = $record->pencatatanKeuangans->sum('jumlah_bayar');
+                            
+                            if ($totalDibayar <= 0) {
+                                Notification::make()
+                                    ->title('Tidak ada pembayaran yang bisa di-refund')
+                                    ->warning()
+                                    ->send();
+                                return;
+                            }
+
+                            try {
+                                DB::beginTransaction();
+
+                                $walletDP = Wallet::walletDP();
+                                $walletKas = Wallet::walletKasPemasukan();
+                                
+                                // Ambil semua mutasi wallet untuk transaksi ini
+                                $mutasiDPMasuk = \App\Models\WalletMutasi::where('wallet_id', $walletDP?->id)
+                                    ->where('transaksi_id', $record->id)
+                                    ->where('tipe', 'masuk')
+                                    ->sum('nominal');
+                                
+                                $mutasiDPTransfer = \App\Models\WalletMutasi::where('wallet_id', $walletDP?->id)
+                                    ->where('transaksi_id', $record->id)
+                                    ->where('tipe', 'transfer')
+                                    ->sum('nominal');
+                                
+                                $mutasiKasMasuk = \App\Models\WalletMutasi::where('wallet_id', $walletKas?->id)
+                                    ->where('transaksi_id', $record->id)
+                                    ->where('tipe', 'masuk')
+                                    ->sum('nominal');
+                                
+                                $mutasiKasTransfer = \App\Models\WalletMutasi::where('wallet_id', $walletKas?->id)
+                                    ->where('transaksi_id', $record->id)
+                                    ->where('tipe', 'transfer')
+                                    ->sum('nominal');
+                                
+                                // Hitung saldo yang perlu dikurangi dari masing-masing wallet
+                                // Saldo DP = masuk - transfer (yang sudah ditransfer ke Kas tidak perlu dikurangi lagi dari DP)
+                                $refundFromDP = max(0, $mutasiDPMasuk - $mutasiDPTransfer);
+                                // Saldo Kas = masuk langsung + transfer masuk dari DP
+                                $refundFromKas = $mutasiKasMasuk + $mutasiKasTransfer;
+                                
+                                // Refund dari wallet DP
+                                if ($refundFromDP > 0 && $walletDP) {
+                                    $walletDP->kurangiSaldo(
+                                        $refundFromDP,
+                                        'Refund transaksi ' . $record->kode . ' - ' . ($record->customer->nama ?? 'Unknown'),
+                                        null,
+                                        $record->id,
+                                        Auth::id()
+                                    );
+                                }
+                                
+                                // Refund dari wallet Kas Pemasukan
+                                if ($refundFromKas > 0 && $walletKas) {
+                                    $walletKas->kurangiSaldo(
+                                        $refundFromKas,
+                                        'Refund transaksi ' . $record->kode . ' - ' . ($record->customer->nama ?? 'Unknown'),
+                                        null,
+                                        $record->id,
+                                        Auth::id()
+                                    );
+                                }
+                                
+                                // Update status transaksi ke DIBATALKAN (tidak hapus, agar histori tetap ada)
+                                $record->update([
+                                    'jumlah_bayar' => 0,
+                                    'status_transaksi' => StatusTransaksiEnum::DIBATALKAN->value,
+                                    'tanggal_pembayaran' => null,
+                                ]);
+
+                                DB::commit();
+
+                                Notification::make()
+                                    ->title('Refund berhasil')
+                                    ->body('Transaksi ' . $record->kode . ' telah di-refund. Total refund: ' . formatRupiah($totalDibayar))
+                                    ->success()
+                                    ->send();
+
+                            } catch (\Exception $e) {
+                                DB::rollBack();
+                                
+                                Notification::make()
+                                    ->title('Gagal melakukan refund')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                     Tables\Actions\EditAction::make()
                         // Hidden jika ada diskon belum di-approve
                         ->visible(fn (Transaksi $record) => 

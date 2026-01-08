@@ -11,6 +11,7 @@ enum StatusTransaksiEnum: string implements HasLabel, HasColor
     case DALAM_PROSES = 'Dalam Proses';
     case SIAP_DIAMBIL = 'Siap Diambil';
     case SELESAI = 'Selesai';
+    case DIBATALKAN = 'Dibatalkan';
 
     public function getLabel(): string
     {
@@ -19,6 +20,7 @@ enum StatusTransaksiEnum: string implements HasLabel, HasColor
             self::DALAM_PROSES => 'Dalam Proses',
             self::SIAP_DIAMBIL => 'Siap Diambil',
             self::SELESAI => 'Selesai',
+            self::DIBATALKAN => 'Dibatalkan (Refund)',
         };
     }
 
@@ -29,6 +31,7 @@ enum StatusTransaksiEnum: string implements HasLabel, HasColor
             self::DALAM_PROSES => 'info',
             self::SIAP_DIAMBIL => 'success',
             self::SELESAI => 'gray',
+            self::DIBATALKAN => 'danger',
         };
     }
 }

@@ -121,6 +121,17 @@ class LaporanDPCustomerResource extends Resource
                     ->money('IDR')
                     ->color('warning')
                     ->placeholder('-'),
+                TextColumn::make('refund_keluar')
+                    ->label('Refund (Keluar)')
+                    ->getStateUsing(function (WalletMutasi $record) {
+                        if ($record->tipe === 'keluar') {
+                            return $record->nominal;
+                        }
+                        return null;
+                    })
+                    ->money('IDR')
+                    ->color('danger')
+                    ->placeholder('-'),
                 TextColumn::make('saldo_sesudah')
                     ->label('Saldo (last balance)')
                     ->money('IDR')
@@ -146,6 +157,7 @@ class LaporanDPCustomerResource extends Resource
                     ->options([
                         'masuk' => 'Masuk (DP)',
                         'transfer' => 'Transfer ke Kas',
+                        'keluar' => 'Refund (Keluar)',
                     ]),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
@@ -165,9 +177,17 @@ class LaporanDPCustomerResource extends Resource
                         $html .= '<div><strong>Tanggal:</strong><br>' . Carbon::parse($record->created_at)->format('d M Y H:i') . '</div>';
                         $html .= '</div>';
                         
-                        if ($record->tipe === 'transfer' && $record->walletTujuan) {
+                        if ($record->tipe === 'keluar') {
+                            $html .= '<div class="mt-4 p-4 bg-danger-100 rounded-lg">';
+                            $html .= '<strong>Tipe:</strong> Refund (Uang Keluar)';
+                            $html .= '</div>';
+                        } elseif ($record->tipe === 'transfer' && $record->walletTujuan) {
                             $html .= '<div class="mt-4 p-4 bg-warning-100 rounded-lg">';
                             $html .= '<strong>Transfer ke:</strong> ' . $record->walletTujuan->nama;
+                            $html .= '</div>';
+                        } elseif ($record->tipe === 'masuk') {
+                            $html .= '<div class="mt-4 p-4 bg-success-100 rounded-lg">';
+                            $html .= '<strong>Tipe:</strong> Masuk (DP)';
                             $html .= '</div>';
                         }
                         

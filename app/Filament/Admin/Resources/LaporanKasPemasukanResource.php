@@ -59,7 +59,7 @@ class LaporanKasPemasukanResource extends Resource
             ->query(
                 WalletMutasi::query()
                     ->where('wallet_id', $walletKasId)
-                    ->whereIn('tipe', ['masuk', 'transfer']) // Masuk langsung atau transfer dari DP
+                    ->whereIn('tipe', ['masuk', 'transfer', 'keluar']) // Masuk langsung, transfer dari DP, atau refund (keluar)
                     ->with(['transaksi.customer', 'sumber', 'createdByUser', 'relatedMutasi'])
                     ->orderBy('created_at', 'desc')
             )
@@ -82,6 +82,10 @@ class LaporanKasPemasukanResource extends Resource
                 Tables\Columns\TextColumn::make('sumber_pembayaran')
                     ->label('Sumber')
                     ->getStateUsing(function (WalletMutasi $record) {
+                        // Jika tipe keluar, ini adalah refund
+                        if ($record->tipe === 'keluar') {
+                            return 'Refund';
+                        }
                         // Jika tipe transfer, berarti ini dari DP
                         if ($record->tipe === 'transfer') {
                             return 'Transfer dari DP';
@@ -90,16 +94,18 @@ class LaporanKasPemasukanResource extends Resource
                     })
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
+                        'Refund' => 'danger',
                         'Transfer dari DP' => 'warning',
                         'Pembayaran Langsung' => 'success',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('nominal')
-                    ->label('Jumlah Masuk')
+                    ->label('Jumlah')
                     ->money('IDR')
                     ->sortable()
-                    ->color('success')
-                    ->weight('bold'),
+                    ->color(fn (WalletMutasi $record) => $record->tipe === 'keluar' ? 'danger' : 'success')
+                    ->weight('bold')
+                    ->formatStateUsing(fn (WalletMutasi $record, $state) => $record->tipe === 'keluar' ? '-' . formatRupiah($state) : formatRupiah($state)),
                 Tables\Columns\TextColumn::make('saldo_sesudah')
                     ->label('Saldo Kas')
                     ->money('IDR')
@@ -124,6 +130,7 @@ class LaporanKasPemasukanResource extends Resource
                     ->options([
                         'masuk' => 'Pembayaran Langsung (LUNAS)',
                         'transfer' => 'Transfer dari DP',
+                        'keluar' => 'Refund',
                     ]),
             ])
             ->actions([
@@ -144,7 +151,11 @@ class LaporanKasPemasukanResource extends Resource
                         $html .= '</div>';
                         
                         // Cek sumber berdasarkan tipe
-                        if ($record->tipe === 'transfer') {
+                        if ($record->tipe === 'keluar') {
+                            $html .= '<div class="mt-4 p-4 bg-danger-100 rounded-lg">';
+                            $html .= '<strong>Sumber:</strong> Refund (Uang Keluar)';
+                            $html .= '</div>';
+                        } elseif ($record->tipe === 'transfer') {
                             $html .= '<div class="mt-4 p-4 bg-warning-100 rounded-lg">';
                             $html .= '<strong>Sumber:</strong> Transfer dari Wallet DP';
                             $html .= '</div>';
