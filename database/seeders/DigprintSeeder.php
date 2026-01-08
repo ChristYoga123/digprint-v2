@@ -23,6 +23,7 @@ use App\Models\BahanMutasi;
 use App\Models\BahanMutasiFaktur;
 use App\Models\BahanStokBatch;
 use App\Enums\BahanMutasi\TipeEnum;
+use App\Models\Wallet;
 use Carbon\Carbon;
 
 class DigprintSeeder extends Seeder
@@ -41,6 +42,27 @@ class DigprintSeeder extends Seeder
             $satuanKg = Satuan::firstOrCreate(['nama' => 'Kg']);
             $satuanLiter = Satuan::firstOrCreate(['nama' => 'Liter']);
             $satuanMeter = Satuan::firstOrCreate(['nama' => 'Meter']);
+
+            // 1.5 Wallet untuk pencatatan keuangan
+            $walletDP = Wallet::firstOrCreate(
+                ['kode' => Wallet::KODE_DP],
+                [
+                    'nama' => 'DP',
+                    'saldo' => 0,
+                    'keterangan' => 'Wallet untuk menyimpan uang DP/cicilan dari customer yang belum lunas',
+                    'is_active' => true,
+                ]
+            );
+
+            $walletKasPemasukan = Wallet::firstOrCreate(
+                ['kode' => Wallet::KODE_KAS_PEMASUKAN],
+                [
+                    'nama' => 'Kas Pemasukan',
+                    'saldo' => 0,
+                    'keterangan' => 'Wallet untuk menyimpan pemasukan dari transaksi lunas',
+                    'is_active' => true,
+                ]
+            );
 
             // 2. Customer Kategori
             $kategoriRetail = CustomerKategori::firstOrCreate(
@@ -881,6 +903,7 @@ class DigprintSeeder extends Seeder
 
             $this->command->info('Seeder berhasil dijalankan!');
             $this->command->info('Data yang dibuat:');
+            $this->command->info('- 2 Wallet (DP, Kas Pemasukan)');
             $this->command->info('- 3 Customer Kategori');
             $this->command->info('- 3 Customer');
             $this->command->info('- 2 Supplier (1 PO, 1 Non-PO)');

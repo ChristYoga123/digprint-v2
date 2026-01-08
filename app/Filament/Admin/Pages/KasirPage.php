@@ -33,6 +33,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Enums\BahanMutasi\TipeEnum as MutasiTipeEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
+use App\Models\Wallet;
 
 class KasirPage extends Page implements HasTable, HasForms
 {
@@ -379,10 +380,20 @@ class KasirPage extends Page implements HasTable, HasForms
                 return;
             }
         } else {
-            // Untuk TOP, jumlah bayar bisa 0 (menyusul), tapi jika diisi harus >= 0
+            // Untuk TOP, jumlah bayar bisa 0 (menyusul), tapi jika diisi harus >= 0 dan < total
             if (!empty($jumlahBayarParsed) && $jumlahBayarParsed < 0) {
                 Notification::make()
                     ->title('Jumlah bayar tidak boleh negatif')
+                    ->warning()
+                    ->send();
+                return;
+            }
+            
+            // TOP tidak boleh >= total tagihan (jika >= total, seharusnya pilih LUNAS)
+            if ($jumlahBayarParsed >= $this->getCartTotalAfterDiscount()) {
+                Notification::make()
+                    ->title('Untuk TOP, jumlah bayar harus kurang dari total tagihan')
+                    ->body('Jika ingin membayar lunas, silakan pilih status pembayaran "Lunas".')
                     ->warning()
                     ->send();
                 return;
@@ -472,8 +483,9 @@ class KasirPage extends Page implements HasTable, HasForms
 
             // Create PencatatanKeuangan untuk jumlah bayar (hanya jika jumlah bayar > 0)
             // Untuk TOP yang jumlah bayar 0, tidak perlu dibuat pencatatan keuangan (menyusul besoknya)
+            $pencatatanKeuangan = null;
             if ($jumlahBayarParsed > 0) {
-                PencatatanKeuangan::create([
+                $pencatatanKeuangan = PencatatanKeuangan::create([
                     'pencatatan_keuangan_type' => Transaksi::class,
                     'pencatatan_keuangan_id' => $transaksi->id,
                     'user_id' => Auth::id(),
@@ -510,6 +522,36 @@ class KasirPage extends Page implements HasTable, HasForms
                         'tanggal_pembayaran' => $this->tanggalPembayaran ?? now(),
                         'jumlah_kembalian' => 0, // TOP tidak ada kembalian
                     ]);
+                }
+            }
+            
+            // === WALLET INTEGRATION ===
+            // Masukkan uang ke wallet sesuai status pembayaran
+            if ($jumlahBayarParsed > 0 && $pencatatanKeuangan) {
+                if ($this->statusPembayaran == StatusPembayaranEnum::LUNAS->value) {
+                    // Bayar LUNAS -> masuk Kas Pemasukan
+                    $walletKas = Wallet::walletKasPemasukan();
+                    if ($walletKas) {
+                        $walletKas->tambahSaldo(
+                            $jumlahBayarParsed,
+                            'Pembayaran LUNAS transaksi ' . $transaksi->kode,
+                            $pencatatanKeuangan,
+                            $transaksi->id,
+                            Auth::id()
+                        );
+                    }
+                } else {
+                    // Bayar TOP -> masuk DP
+                    $walletDP = Wallet::walletDP();
+                    if ($walletDP) {
+                        $walletDP->tambahSaldo(
+                            $jumlahBayarParsed,
+                            'Pembayaran DP/cicilan transaksi ' . $transaksi->kode,
+                            $pencatatanKeuangan,
+                            $transaksi->id,
+                            Auth::id()
+                        );
+                    }
                 }
             }
 

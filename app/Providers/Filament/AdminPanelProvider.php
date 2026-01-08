@@ -139,7 +139,7 @@ class AdminPanelProvider extends PanelProvider
                                 ...LaporanHPPResource::getNavigationItems(),
                                 ...LaporanKasPemasukanResource::getNavigationItems(),
                                 ...LaporanPiutangCustomerResource::getNavigationItems(),
-                                // ...LaporanDPCustomerResource::getNavigationItems(),
+                                ...LaporanDPCustomerResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Produksi')
                             ->items([

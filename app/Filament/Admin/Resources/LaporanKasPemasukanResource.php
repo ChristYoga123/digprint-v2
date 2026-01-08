@@ -6,17 +6,19 @@ use Carbon\Carbon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
-use App\Models\PencatatanKeuangan;
+use App\Models\WalletMutasi;
+use App\Models\Wallet;
 use App\Models\Transaksi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Admin\Resources\LaporanKasPemasukanResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 
 class LaporanKasPemasukanResource extends Resource
 {
-    protected static ?string $model = PencatatanKeuangan::class;
+    protected static ?string $model = WalletMutasi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-down-on-square';
     
@@ -50,11 +52,15 @@ class LaporanKasPemasukanResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $walletKas = Wallet::walletKasPemasukan();
+        $walletKasId = $walletKas ? $walletKas->id : 0;
+        
         return $table
             ->query(
-                PencatatanKeuangan::query()
-                    ->where('pencatatan_keuangan_type', Transaksi::class)
-                    ->with(['user'])
+                WalletMutasi::query()
+                    ->where('wallet_id', $walletKasId)
+                    ->whereIn('tipe', ['masuk', 'transfer']) // Masuk langsung atau transfer dari DP
+                    ->with(['transaksi.customer', 'sumber', 'createdByUser', 'relatedMutasi'])
                     ->orderBy('created_at', 'desc')
             )
             ->columns([
@@ -62,94 +68,103 @@ class LaporanKasPemasukanResource extends Resource
                     ->label('Tanggal')
                     ->dateTime('d M Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('kode_transaksi')
+                Tables\Columns\TextColumn::make('transaksi.kode')
                     ->label('Kode Transaksi')
-                    ->getStateUsing(function (PencatatanKeuangan $record) {
-                        $transaksi = Transaksi::find($record->pencatatan_keuangan_id);
-                        return $transaksi?->kode ?? '-';
-                    })
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->whereHas('pencatatanKeuanganable', function ($q) use ($search) {
-                            $q->where('kode', 'like', "%{$search}%");
-                        });
-                    }),
-                Tables\Columns\TextColumn::make('customer')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->url(fn (WalletMutasi $record) => $record->transaksi_id 
+                        ? TransaksiResource::getUrl('index', ['tableSearch' => $record->transaksi->kode])
+                        : null),
+                Tables\Columns\TextColumn::make('transaksi.customer.nama')
                     ->label('Customer')
-                    ->getStateUsing(function (PencatatanKeuangan $record) {
-                        $transaksi = Transaksi::with('customer')->find($record->pencatatan_keuangan_id);
-                        return $transaksi?->customer?->nama ?? '-';
-                    }),
-                Tables\Columns\TextColumn::make('jenis_pembayaran')
-                    ->label('Jenis')
-                    ->getStateUsing(function (PencatatanKeuangan $record) {
-                        // Cek apakah ini DP, Pelunasan, atau Cicilan berdasarkan keterangan atau urutan pembayaran
-                        $transaksi = Transaksi::find($record->pencatatan_keuangan_id);
-                        if (!$transaksi) return '-';
-                        
-                        $pembayaranSebelumnya = PencatatanKeuangan::where('pencatatan_keuangan_type', Transaksi::class)
-                            ->where('pencatatan_keuangan_id', $transaksi->id)
-                            ->where('created_at', '<', $record->created_at)
-                            ->count();
-                        
-                        $totalTagihan = $transaksi->total_harga_transaksi_setelah_diskon;
-                        $totalDibayar = PencatatanKeuangan::where('pencatatan_keuangan_type', Transaksi::class)
-                            ->where('pencatatan_keuangan_id', $transaksi->id)
-                            ->where('created_at', '<=', $record->created_at)
-                            ->sum('jumlah_bayar');
-                        
-                        if ($pembayaranSebelumnya == 0) {
-                            if ($totalDibayar >= $totalTagihan) {
-                                return 'Pelunasan';
-                            }
-                            return 'DP';
+                    ->searchable()
+                    ->placeholder('-'),
+                Tables\Columns\TextColumn::make('sumber_pembayaran')
+                    ->label('Sumber')
+                    ->getStateUsing(function (WalletMutasi $record) {
+                        // Jika tipe transfer, berarti ini dari DP
+                        if ($record->tipe === 'transfer') {
+                            return 'Transfer dari DP';
                         }
-                        
-                        if ($totalDibayar >= $totalTagihan) {
-                            return 'Pelunasan';
-                        }
-                        
-                        return 'Cicilan';
+                        return 'Pembayaran Langsung';
                     })
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'DP' => 'warning',
-                        'Cicilan' => 'info',
-                        'Pelunasan' => 'success',
+                        'Transfer dari DP' => 'warning',
+                        'Pembayaran Langsung' => 'success',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('jumlah_bayar')
-                    ->label('Jumlah Bayar')
+                Tables\Columns\TextColumn::make('nominal')
+                    ->label('Jumlah Masuk')
                     ->money('IDR')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('metode_pembayaran')
-                    ->label('Metode')
-                    ->placeholder('-')
-                    ->badge()
+                    ->sortable()
+                    ->color('success')
+                    ->weight('bold'),
+                Tables\Columns\TextColumn::make('saldo_sesudah')
+                    ->label('Saldo Kas')
+                    ->money('IDR')
+                    ->weight('bold')
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('user.name')
+                Tables\Columns\TextColumn::make('createdByUser.name')
                     ->label('Diterima Oleh')
-                    ->searchable(),
+                    ->searchable()
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('keterangan')
                     ->label('Keterangan')
                     ->placeholder('-')
                     ->wrap()
-                    ->limit(50),
+                    ->limit(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 DateRangeFilter::make('created_at')
                     ->label('Tanggal'),
-                Tables\Filters\SelectFilter::make('metode_pembayaran')
-                    ->label('Metode Pembayaran')
-                    ->options(function () {
-                        return PencatatanKeuangan::where('pencatatan_keuangan_type', Transaksi::class)
-                            ->whereNotNull('metode_pembayaran')
-                            ->distinct()
-                            ->pluck('metode_pembayaran', 'metode_pembayaran')
-                            ->toArray();
-                    })
-                    ->searchable(),
+                Tables\Filters\SelectFilter::make('tipe')
+                    ->label('Sumber Pemasukan')
+                    ->options([
+                        'masuk' => 'Pembayaran Langsung (LUNAS)',
+                        'transfer' => 'Transfer dari DP',
+                    ]),
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\ViewAction::make()
+                    ->modalHeading(fn (WalletMutasi $record) => 'Detail Pemasukan - ' . $record->kode)
+                    ->modalContent(function (WalletMutasi $record) {
+                        $html = '<div class="space-y-4">';
+                        
+                        $html .= '<div class="grid grid-cols-2 gap-4">';
+                        $html .= '<div><strong>Kode Mutasi:</strong><br>' . $record->kode . '</div>';
+                        $html .= '<div><strong>Invoice:</strong><br>' . ($record->transaksi?->kode ?? '-') . '</div>';
+                        $html .= '<div><strong>Customer:</strong><br>' . ($record->transaksi?->customer?->nama ?? '-') . '</div>';
+                        $html .= '<div><strong>Nominal:</strong><br>' . formatRupiah($record->nominal) . '</div>';
+                        $html .= '<div><strong>Saldo Sebelum:</strong><br>' . formatRupiah($record->saldo_sebelum) . '</div>';
+                        $html .= '<div><strong>Saldo Sesudah:</strong><br>' . formatRupiah($record->saldo_sesudah) . '</div>';
+                        $html .= '<div><strong>Tanggal:</strong><br>' . Carbon::parse($record->created_at)->format('d M Y H:i') . '</div>';
+                        $html .= '<div><strong>Diterima Oleh:</strong><br>' . ($record->createdByUser?->name ?? '-') . '</div>';
+                        $html .= '</div>';
+                        
+                        // Cek sumber berdasarkan tipe
+                        if ($record->tipe === 'transfer') {
+                            $html .= '<div class="mt-4 p-4 bg-warning-100 rounded-lg">';
+                            $html .= '<strong>Sumber:</strong> Transfer dari Wallet DP';
+                            $html .= '</div>';
+                        } else {
+                            $html .= '<div class="mt-4 p-4 bg-success-100 rounded-lg">';
+                            $html .= '<strong>Sumber:</strong> Pembayaran Langsung (LUNAS)';
+                            $html .= '</div>';
+                        }
+                        
+                        if ($record->keterangan) {
+                            $html .= '<div class="mt-4"><strong>Keterangan:</strong><br>' . nl2br(e($record->keterangan)) . '</div>';
+                        }
+                        
+                        $html .= '</div>';
+                        
+                        return new HtmlString($html);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
+            ])
             ->bulkActions([]);
     }
 

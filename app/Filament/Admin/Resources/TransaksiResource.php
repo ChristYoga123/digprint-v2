@@ -10,6 +10,7 @@ use App\Models\Transaksi;
 use Filament\Tables\Table;
 use Filament\Support\RawJs;
 use Filament\Resources\Resource;
+use App\Models\Wallet;
 use App\Models\PencatatanKeuangan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
@@ -204,6 +205,11 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                         ->icon('heroicon-o-document-text')
                         ->color('success')
                         ->modalHeading(fn(Transaksi $record) => 'Ringkasan Biaya - ' . $record->kode)
+                        // Hidden jika ada diskon belum di-approve
+                        ->visible(fn (Transaksi $record) => 
+                            Auth::user()->can('view_transaksi') &&
+                            !($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null)
+                        )
                         ->modalContent(function (Transaksi $record) {
                             $transaksiProduks = $record->transaksiProduks()->with(['produk', 'design'])->get();
                             $customer = $record->customer;
@@ -330,8 +336,7 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                             return new HtmlString($html);
                         })
                         ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Tutup')
-                        ->visible(fn () => Auth::user()->can('view_transaksi')),
+                        ->modalCancelActionLabel('Tutup'),
                     Tables\Actions\Action::make('detail_transaksi')
                         ->label('Detail Transaksi')
                         ->icon('heroicon-o-document-text')
@@ -345,7 +350,11 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                         ->infolist(fn(Transaksi $record) => [
                             Livewire::make(DetailPembayaranTable::class, ['transaksi' => $record]),
                         ])
-                        ->visible(fn () => Auth::user()->can('view_transaksi')),
+                        // Hidden jika ada diskon belum di-approve
+                        ->visible(fn (Transaksi $record) => 
+                            Auth::user()->can('view_transaksi') &&
+                            !($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null)
+                        ),
                     Tables\Actions\Action::make('bayar_top')
                         ->label('Bayar TOP')
                         ->icon('heroicon-o-currency-dollar')
@@ -361,7 +370,11 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                                 // Fallback: bandingkan dengan value jika masih string
                                 $isTop = $status === StatusPembayaranEnum::TERM_OF_PAYMENT->value;
                             }
-                            return $isTop && Auth::user()->can('pay_transaksi');
+                            
+                            // Juga hidden jika ada diskon belum di-approve
+                            $hasUnapprovedDiscount = $record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null;
+                            
+                            return $isTop && Auth::user()->can('pay_transaksi') && !$hasUnapprovedDiscount;
                         })
                         ->form([
                             Forms\Components\Select::make('metode_pembayaran')
@@ -407,7 +420,7 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                                 DB::beginTransaction();
 
                                 // Create PencatatanKeuangan
-                                PencatatanKeuangan::create([
+                                $pencatatanKeuangan = PencatatanKeuangan::create([
                                     'pencatatan_keuangan_type' => Transaksi::class,
                                     'pencatatan_keuangan_id' => $record->id,
                                     'user_id' => Auth::id(),
@@ -428,12 +441,34 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                                 ]);
 
                                 // Cek apakah sudah lunas
-                                if ($totalPembayaran >= $record->total_harga_transaksi_setelah_diskon) {
+                                $isNowLunas = $totalPembayaran >= $record->total_harga_transaksi_setelah_diskon;
+                                
+                                if ($isNowLunas) {
                                     $record->update([
                                         'status_pembayaran' => StatusPembayaranEnum::LUNAS->value,
                                         'tanggal_pembayaran' => now(),
                                     ]);
+                                }
+                                
+                                // Masukkan uang ke wallet DP (untuk pembayaran TOP)
+                                $walletDP = Wallet::walletDP();
+                                if ($walletDP) {
+                                    $walletDP->tambahSaldo(
+                                        $jumlahBayarParsed,
+                                        'Pembayaran cicilan transaksi ' . $record->kode,
+                                        $pencatatanKeuangan,
+                                        $record->id,
+                                        Auth::id()
+                                    );
+                                }
+                                
+                                // Jika lunas DAN status transaksi sudah SIAP_DIAMBIL, transfer semua DP ke Kas Pemasukan
+                                $record->refresh();
+                                if ($isNowLunas && $record->status_transaksi === StatusTransaksiEnum::SIAP_DIAMBIL) {
+                                    self::transferDPKeKasPemasukan($record);
+                                }
 
+                                if ($isNowLunas) {
                                     Notification::make()
                                         ->title('Transaksi sudah lunas')
                                         ->success()
@@ -457,8 +492,16 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                                     ->send();
                             }
                         }),
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\EditAction::make()
+                        // Hidden jika ada diskon belum di-approve
+                        ->visible(fn (Transaksi $record) => 
+                            !($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null)
+                        ),
+                    Tables\Actions\DeleteAction::make()
+                        // Hidden jika ada diskon belum di-approve
+                        ->visible(fn (Transaksi $record) => 
+                            !($record->total_diskon_transaksi > 0 && $record->approved_diskon_by === null)
+                        ),
                 ]),
             ])
             ->bulkActions([
@@ -466,6 +509,43 @@ class TransaksiResource extends Resource implements HasShieldPermissions
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Transfer semua saldo DP untuk transaksi tertentu ke Kas Pemasukan
+     */
+    public static function transferDPKeKasPemasukan(Transaksi $transaksi): void
+    {
+        $walletDP = Wallet::walletDP();
+        $walletKas = Wallet::walletKasPemasukan();
+        
+        if (!$walletDP || !$walletKas) {
+            return;
+        }
+        
+        // Hitung total DP yang sudah masuk untuk transaksi ini
+        $totalDPMasuk = \App\Models\WalletMutasi::where('wallet_id', $walletDP->id)
+            ->where('transaksi_id', $transaksi->id)
+            ->where('tipe', 'masuk')
+            ->sum('nominal');
+        
+        // Hitung total yang sudah ditransfer ke Kas Pemasukan
+        $totalSudahTransfer = \App\Models\WalletMutasi::where('wallet_id', $walletDP->id)
+            ->where('transaksi_id', $transaksi->id)
+            ->where('tipe', 'transfer')
+            ->sum('nominal');
+        
+        $sisaDPUntukTransfer = $totalDPMasuk - $totalSudahTransfer;
+        
+        if ($sisaDPUntukTransfer > 0) {
+            $walletDP->transferKe(
+                $walletKas,
+                $sisaDPUntukTransfer,
+                'Transfer DP ke Kas Pemasukan - Transaksi ' . $transaksi->kode . ' (Lunas & Siap Diambil)',
+                $transaksi->id,
+                \Illuminate\Support\Facades\Auth::id()
+            );
+        }
     }
 
     public static function getPages(): array
@@ -476,3 +556,4 @@ class TransaksiResource extends Resource implements HasShieldPermissions
         ];
     }
 }
+
