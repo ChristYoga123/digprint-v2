@@ -13,11 +13,26 @@ use Dotswan\FilamentLaravelPulse\Widgets\PulseUsage;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Pages\Dashboard\Concerns\HasFiltersAction;
+use Filament\Pages\Page;
 use Filament\Support\Enums\ActionSize;
  
-class PulseDashboard extends \Filament\Pages\Dashboard
+class PulseDashboard extends Page
 {
     use HasFiltersAction;
+
+    protected static ?string $navigationIcon = 'heroicon-o-server-stack';
+
+    protected static ?string $navigationLabel = 'Pulse Monitor';
+
+    protected static ?string $title = 'Pulse Monitor';
+
+    protected static ?string $slug = 'pulse-monitor';
+
+    protected static ?int $navigationSort = 100;
+
+    protected static ?string $navigationGroup = 'Sistem';
+
+    protected static string $view = 'filament-panels::pages.dashboard';
  
     public function getColumns(): int|string|array
     {
@@ -29,11 +44,11 @@ class PulseDashboard extends \Filament\Pages\Dashboard
         return [
             ActionGroup::make([
                 Action::make('1h')
-                    ->action(fn() => $this->redirect(route('filament.manager.pages.dashboard'))),
+                    ->action(fn() => $this->redirect(static::getUrl())),
                 Action::make('24h')
-                    ->action(fn() => $this->redirect(route('filament.manager.pages.dashboard', ['period' => '24_hours']))),
+                    ->action(fn() => $this->redirect(static::getUrl(['period' => '24_hours']))),
                 Action::make('7d')
-                    ->action(fn() => $this->redirect(route('filament.manager.pages.dashboard', ['period' => '7_days']))),
+                    ->action(fn() => $this->redirect(static::getUrl(['period' => '7_days']))),
             ])
                 ->label(__('Filter'))
                 ->icon('heroicon-m-funnel')
@@ -56,4 +71,10 @@ class PulseDashboard extends \Filament\Pages\Dashboard
             PulseSlowOutGoingRequests::class
         ];
     }
+
+    public function getVisibleWidgets(): array
+    {
+        return $this->filterVisibleWidgets($this->getWidgets());
+    }
 }
+
