@@ -59,6 +59,8 @@ use App\Filament\Admin\Resources\LaporanLemburKaryawanResource;
 use App\Filament\Admin\Resources\LaporanPembelianHarianResource;
 use App\Filament\Admin\Resources\LaporanPiutangCustomerResource;
 use App\Filament\Admin\Resources\LaporanPembayaranSupplierResource;
+use App\Filament\Admin\Resources\StokOpnameResource;
+use App\Filament\Admin\Resources\LaporanStokOpnameResource;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -140,6 +142,7 @@ class AdminPanelProvider extends PanelProvider
                                 ...LaporanKasPemasukanResource::getNavigationItems(),
                                 ...LaporanPiutangCustomerResource::getNavigationItems(),
                                 ...LaporanDPCustomerResource::getNavigationItems(),
+                                ...LaporanStokOpnameResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Produksi')
                             ->items([
@@ -157,6 +160,7 @@ class AdminPanelProvider extends PanelProvider
                                 ...POResource::getNavigationItems(),
                                 ...BahanMutasiResource::getNavigationItems(),
                                 ...BahanMutasiFakturResource::getNavigationItems(),
+                                ...StokOpnameResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Administrasi')
                             ->items([
