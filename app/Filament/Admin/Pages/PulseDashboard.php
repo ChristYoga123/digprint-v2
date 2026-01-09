@@ -28,6 +28,8 @@ class PulseDashboard extends Page
 
     protected static ?string $slug = 'pulse-monitor';
 
+    protected static string $routePath = 'pulse-monitor';
+
     protected static ?int $navigationSort = 100;
 
     protected static ?string $navigationGroup = 'Sistem';
