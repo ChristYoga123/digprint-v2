@@ -20,6 +20,7 @@ use App\Filament\Admin\Resources\POResource;
 use App\Filament\Admin\Pages\PraProduksiPage;
 use App\Filament\Admin\Resources\BahanResource;
 use App\Filament\Admin\Resources\MesinResource;
+use App\Filament\Admin\Widgets\TopProdukWidget;
 use Illuminate\Session\Middleware\StartSession;
 use App\Filament\Admin\Resources\KloterResource;
 use App\Filament\Admin\Resources\ProdukResource;
@@ -30,11 +31,14 @@ use App\Filament\Admin\Resources\CustomerResource;
 use App\Filament\Admin\Resources\KaryawanResource;
 use App\Filament\Admin\Resources\ProduksiResource;
 use App\Filament\Admin\Resources\SupplierResource;
+use App\Filament\Admin\Widgets\BahanMinimalWidget;
 use App\Filament\Admin\Resources\DeskprintResource;
 use App\Filament\Admin\Resources\FinishingResource;
 use App\Filament\Admin\Resources\PettyCashResource;
 use App\Filament\Admin\Resources\TransaksiResource;
 use App\Filament\Admin\Resources\LaporanHPPResource;
+use App\Filament\Admin\Resources\StokOpnameResource;
+use App\Filament\Admin\Widgets\DashboardStatsWidget;
 use App\Filament\Admin\Resources\BahanMutasiResource;
 use App\Filament\Admin\Resources\PraProduksiResource;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -50,6 +54,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Filament\Admin\Resources\BahanMutasiFakturResource;
 use App\Filament\Admin\Resources\LaporanDPCustomerResource;
+use App\Filament\Admin\Resources\LaporanStokOpnameResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Admin\Resources\LaporanKasPemasukanResource;
 use App\Filament\Admin\Resources\LaporanKerjaKaryawanResource;
@@ -59,8 +64,6 @@ use App\Filament\Admin\Resources\LaporanLemburKaryawanResource;
 use App\Filament\Admin\Resources\LaporanPembelianHarianResource;
 use App\Filament\Admin\Resources\LaporanPiutangCustomerResource;
 use App\Filament\Admin\Resources\LaporanPembayaranSupplierResource;
-use App\Filament\Admin\Resources\StokOpnameResource;
-use App\Filament\Admin\Resources\LaporanStokOpnameResource;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -77,12 +80,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                // Custom Dashboard is auto-discovered from app/Filament/Admin/Pages
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets are registered in Dashboard page's getWidgets() method
             ])
             ->middleware([
                 EncryptCookies::class,
