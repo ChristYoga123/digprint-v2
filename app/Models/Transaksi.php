@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Enums\Transaksi\JenisDiskonEnum;
 use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\Transaksi\StatusPembayaranEnum;
+use App\Jobs\SendSiapDiambilWhatsappJob;
 
 class Transaksi extends Model
 {
@@ -101,11 +102,17 @@ class Transaksi extends Model
         
         $this->update(['status_transaksi' => $newStatus]);
         
-        // Jika status berubah menjadi SIAP_DIAMBIL dan pembayaran sudah LUNAS, transfer DP ke Kas
+        // Jika status berubah menjadi SIAP_DIAMBIL
         if ($newStatus === StatusTransaksiEnum::SIAP_DIAMBIL && 
-            $oldStatus !== StatusTransaksiEnum::SIAP_DIAMBIL &&
-            $this->status_pembayaran === StatusPembayaranEnum::LUNAS) {
-            $this->transferDPKeKasPemasukan();
+            $oldStatus !== StatusTransaksiEnum::SIAP_DIAMBIL) {
+            
+            // Transfer DP ke Kas jika pembayaran sudah LUNAS
+            if ($this->status_pembayaran === StatusPembayaranEnum::LUNAS) {
+                $this->transferDPKeKasPemasukan();
+            }
+            
+            // Kirim notifikasi WhatsApp bahwa pesanan siap diambil
+            SendSiapDiambilWhatsappJob::dispatch($this->id);
         }
     }
 

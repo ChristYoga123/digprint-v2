@@ -34,6 +34,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use App\Enums\BahanMutasi\TipeEnum as MutasiTipeEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Models\Wallet;
+use App\Jobs\SendNotaWhatsappJob;
 
 class KasirPage extends Page implements HasTable, HasForms
 {
@@ -741,6 +742,13 @@ class KasirPage extends Page implements HasTable, HasForms
             // Store transaksi id and print size before clearing cart
             $transaksiIdForPrint = $transaksi->id;
             $printSize = $this->printNotaSize ?? 'thermal';
+            
+            // === WHATSAPP NOTIFICATION ===
+            // Kirim WA nota hanya jika TIDAK ADA diskon
+            // Jika ada diskon, WA akan dikirim setelah diskon di-approve/reject di PengajuanDiskonResource
+            if (empty($totalDiskonTransaksi) || $totalDiskonTransaksi <= 0) {
+                SendNotaWhatsappJob::dispatch($transaksi->id);
+            }
 
             Notification::make()
                 ->title('Transaksi berhasil dibuat')

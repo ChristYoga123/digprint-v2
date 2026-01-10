@@ -6,6 +6,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\ServiceProvider;
 use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Illuminate\Database\Eloquent\Model;
+use App\Contracts\WhatsappInterface;
+use App\Services\FontteService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Bind WhatsappInterface to FontteService
+        $this->app->bind(WhatsappInterface::class, FontteService::class);
     }
 
     /**

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'fontte' => [
+        'token' => env('FONTTE_TOKEN'),
+    ],
+
 ];

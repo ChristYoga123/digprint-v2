@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Transaksi\JenisDiskonEnum;
+use App\Jobs\SendNotaWhatsappJob;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
 class PengajuanDiskonResource extends Resource implements HasShieldPermissions
@@ -163,6 +164,9 @@ class PengajuanDiskonResource extends Resource implements HasShieldPermissions
                                 'approved_diskon_by' => Auth::id(),
                             ]);
 
+                            // Kirim notifikasi WA bahwa diskon sudah di-approve
+                            SendNotaWhatsappJob::dispatch($record->id, isDiscountApproved: true);
+
                             Notification::make()
                                 ->title('Berhasil')
                                 ->body('Diskon berhasil di-approve.')
@@ -193,6 +197,9 @@ class PengajuanDiskonResource extends Resource implements HasShieldPermissions
                                 'total_harga_transaksi_setelah_diskon' => $record->total_harga_transaksi,
                             ]);
 
+                            // Kirim notifikasi WA bahwa diskon ditolak (pakai harga asli)
+                            SendNotaWhatsappJob::dispatch($record->id, isDiscountRejected: true);
+
                             Notification::make()
                                 ->title('Berhasil')
                                 ->body('Diskon berhasil ditolak dan di-reset.')
@@ -222,6 +229,10 @@ class PengajuanDiskonResource extends Resource implements HasShieldPermissions
                                     $record->update([
                                         'approved_diskon_by' => Auth::id(),
                                     ]);
+                                    
+                                    // Kirim notifikasi WA bahwa diskon sudah di-approve
+                                    SendNotaWhatsappJob::dispatch($record->id, isDiscountApproved: true);
+                                    
                                     $count++;
                                 }
 

@@ -9,12 +9,14 @@ enum TipeEnum: string implements HasLabel, HasColor
 {
     case MASUK = 'Masuk';
     case KELUAR = 'Keluar';
+    case OPNAME = 'Opname';
 
     public function getLabel(): string
     {
         return match($this) {
             self::MASUK => 'Masuk',
             self::KELUAR => 'Keluar',
+            self::OPNAME => 'Opname',
         };
     }
 
@@ -23,6 +25,7 @@ enum TipeEnum: string implements HasLabel, HasColor
         return match($this) {
             self::MASUK => 'success',
             self::KELUAR => 'danger',
+            self::OPNAME => 'warning',
         };
     }
 }
