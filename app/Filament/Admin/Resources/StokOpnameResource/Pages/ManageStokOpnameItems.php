@@ -10,6 +10,7 @@ use App\Models\StokOpnameItem;
 use App\Models\StokOpnameHistory;
 use App\Models\BahanStokBatch;
 use App\Models\BahanMutasi;
+use App\Models\BahanMutasiPenggunaanBatch;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Table;
 use Filament\Tables\Contracts\HasTable;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Enums\StokOpname\StatusEnum;
 use App\Enums\StokOpname\ItemStatusEnum;
+use App\Enums\BahanMutasi\TipeEnum;
 use App\Filament\Admin\Resources\StokOpnameResource;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -298,11 +300,11 @@ class ManageStokOpnameItems extends Page implements HasTable
                 
                 // Adjust stock based on difference
                 if ($difference > 0) {
-                    // Stock increase - create adjustment batch
-                    $this->createAdjustmentBatch($bahan, $difference, 'increase', $item);
+                    // Stock increase (Adjustment IN) - create new batch
+                    $this->createAdjustmentIn($bahan, $difference, $item);
                 } else {
-                    // Stock decrease - reduce from existing batches (FIFO)
-                    $this->reduceStockFIFO($bahan, abs($difference));
+                    // Stock decrease (Adjustment OUT) - reduce from existing batches (FIFO)
+                    $this->createAdjustmentOut($bahan, abs($difference), $item);
                 }
             }
             
@@ -314,41 +316,94 @@ class ManageStokOpnameItems extends Page implements HasTable
         });
     }
 
-    protected function createAdjustmentBatch($bahan, float $amount, string $type, StokOpnameItem $item): void
+    /**
+     * Adjustment IN: Stok fisik > Stok sistem
+     * - Buat mutasi MASUK
+     * - Tambahkan FIFO layer baru dengan harga beli terakhir
+     */
+    protected function createAdjustmentIn($bahan, float $amount, StokOpnameItem $item): void
     {
-        // First create a mutation record for this adjustment
+        // Get last purchase price from the most recent batch
+        $lastBatch = BahanStokBatch::where('bahan_id', $bahan->id)
+            ->where('harga_satuan_terkecil', '>', 0)
+            ->orderBy('tanggal_masuk', 'desc')
+            ->first();
+        
+        $unitCost = $lastBatch?->harga_satuan_terkecil ?? 0;
+        $totalNilai = $amount * $unitCost;
+        
+        // Create adjustment mutation (MASUK)
         $mutasi = BahanMutasi::create([
-            'kode' => generateKode('ADJ'),
-            'tipe' => 'MASUK',
+            'kode' => generateKode('ADJ-IN'),
+            'tipe' => TipeEnum::MASUK,
             'bahan_id' => $bahan->id,
             'jumlah_mutasi' => $amount,
             'jumlah_satuan_terkecil' => $amount,
+            'harga_satuan_terkecil' => $unitCost,
+            'total_harga_mutasi' => $totalNilai,
+            'keterangan' => 'Adjustment IN - Stok Opname ' . $this->record->kode,
+            'created_by' => Auth::id(),
         ]);
         
-        // Then create a batch for the adjustment
+        // Create new FIFO batch/layer
         BahanStokBatch::create([
             'bahan_id' => $bahan->id,
             'bahan_mutasi_id' => $mutasi->id,
             'jumlah_masuk' => $amount,
             'jumlah_tersedia' => $amount,
-            'harga_satuan_terkecil' => 0, // Adjustment has no cost
-            'harga_satuan_terbesar' => 0,
+            'harga_satuan_terkecil' => $unitCost,
+            'harga_satuan_terbesar' => $lastBatch?->harga_satuan_terbesar ?? 0,
             'tanggal_masuk' => now(),
         ]);
     }
 
-    protected function reduceStockFIFO($bahan, float $amount): void
+    /**
+     * Adjustment OUT: Stok fisik < Stok sistem
+     * - Buat mutasi KELUAR
+     * - Kurangi FIFO layer dari yang PALING TUA
+     * - Hitung total nilai selisih dari setiap layer yang dikonsumsi
+     */
+    protected function createAdjustmentOut($bahan, float $amount, StokOpnameItem $item): void
     {
         $remaining = $amount;
+        $totalNilaiSelisih = 0;
         $batches = BahanStokBatch::getAvailableBatches($bahan->id, $amount);
         
+        // Create adjustment mutation (KELUAR)
+        $mutasi = BahanMutasi::create([
+            'kode' => generateKode('ADJ-OUT'),
+            'tipe' => TipeEnum::KELUAR,
+            'bahan_id' => $bahan->id,
+            'jumlah_mutasi' => $amount,
+            'jumlah_satuan_terkecil' => $amount,
+            'keterangan' => 'Adjustment OUT - Stok Opname ' . $this->record->kode,
+            'created_by' => Auth::id(),
+        ]);
+        
+        // FIFO: Consume from oldest batches first
         foreach ($batches as $batch) {
             if ($remaining <= 0) break;
             
             $reduceAmount = min($batch->jumlah_tersedia, $remaining);
+            $nilaiLayer = $reduceAmount * $batch->harga_satuan_terkecil;
+            $totalNilaiSelisih += $nilaiLayer;
+            
+            // Create usage record for audit trail
+            BahanMutasiPenggunaanBatch::create([
+                'bahan_mutasi_id' => $mutasi->id,
+                'bahan_stok_batch_id' => $batch->id,
+                'jumlah_digunakan' => $reduceAmount,
+            ]);
+            
+            // Reduce stock from batch
             $batch->reduceStock($reduceAmount);
             $remaining -= $reduceAmount;
         }
+        
+        // Update mutation with total value
+        $mutasi->update([
+            'total_harga_mutasi' => $totalNilaiSelisih,
+        ]);
     }
 
     protected function checkAndUpdateStokOpnameStatus(): void
