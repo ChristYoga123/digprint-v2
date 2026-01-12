@@ -8,6 +8,7 @@ use App\Models\Bahan;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Support\RawJs;
+use App\Models\BahanStokBatch;
 use Filament\Resources\Resource;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\BahanResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Admin\Resources\BahanResource\RelationManagers;
+
 
 class BahanResource extends Resource implements HasShieldPermissions
 {
@@ -127,6 +129,33 @@ class BahanResource extends Resource implements HasShieldPermissions
                     ->color(fn(Bahan $record) => $record->stok == 0 ? 'danger' : ($record->stok < $record->stok_minimal ? 'warning' : 'success'))
                     ->tooltip(fn(Bahan $record) => $record->stok == 0 ? 'Stok habis' : ($record->stok < $record->stok_minimal ? 'Stok kurang' : 'Stok cukup'))
                     ->getStateUsing(fn(Bahan $record) => $record->stok),
+                Tables\Columns\TextColumn::make('stok_minimal')
+                    ->label('Stok Min.')
+                    ->numeric()
+                    ->suffix(fn(Bahan $record) => ' ' . ($record->satuanTerkecil->nama ?? ''))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('nilai_stok')
+                    ->label('Nilai Stok')
+                    ->getStateUsing(function(Bahan $record) {
+                        // Hitung total nilai stok dari batch FIFO (SUM(jumlah_tersedia * harga_satuan_terkecil))
+                        return BahanStokBatch::where('bahan_id', $record->id)
+                            ->where('jumlah_tersedia', '>', 0)
+                            ->selectRaw('SUM(jumlah_tersedia * harga_satuan_terkecil) as total')
+                            ->value('total') ?? 0;
+                    })
+                    ->money('IDR')
+                    ->description(fn(Bahan $record) => 'FIFO'),
+                Tables\Columns\TextColumn::make('harga_terakhir')
+                    ->label('Harga Terakhir')
+                    ->getStateUsing(function(Bahan $record) {
+                        // Ambil harga_satuan_terkecil dari batch terakhir
+                        $lastBatch = BahanStokBatch::where('bahan_id', $record->id)
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+                        return $lastBatch?->harga_satuan_terkecil ?? 0;
+                    })
+                    ->money('IDR')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -145,35 +174,43 @@ class BahanResource extends Resource implements HasShieldPermissions
                             ->label('Status Stok')
                             ->options([
                                 'habis' => 'Stok habis',
-                                'kurang' => 'Stok kurang',
-                                'cukup' => 'Stok cukup',
+                                'kurang' => 'Stok kurang (< minimal)',
+                                'cukup' => 'Stok cukup (>= minimal)',
                             ])
-                            ->required()
                             ->searchable()
                             ->preload()
                             ->placeholder('Pilih Status Stok'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
+                        if (empty($data['status_stok'])) {
+                            return $query;
+                        }
+                        
                         return $query->when($data['status_stok'] === 'habis', function (Builder $query) {
+                            // Stok = 0
                             return $query->whereRaw('(
                                 SELECT COALESCE(SUM(jumlah_tersedia), 0)
                                 FROM bahan_stok_batches
                                 WHERE bahan_stok_batches.bahan_id = bahans.id
-                                AND jumlah_tersedia > 0
                             ) = 0');
                         })->when($data['status_stok'] === 'kurang', function (Builder $query) {
+                            // Stok > 0 DAN Stok < stok_minimal
                             return $query->whereRaw('(
                                 SELECT COALESCE(SUM(jumlah_tersedia), 0)
                                 FROM bahan_stok_batches
                                 WHERE bahan_stok_batches.bahan_id = bahans.id
-                                AND jumlah_tersedia > 0
+                            ) > 0')
+                            ->whereRaw('(
+                                SELECT COALESCE(SUM(jumlah_tersedia), 0)
+                                FROM bahan_stok_batches
+                                WHERE bahan_stok_batches.bahan_id = bahans.id
                             ) < bahans.stok_minimal');
                         })->when($data['status_stok'] === 'cukup', function (Builder $query) {
+                            // Stok >= stok_minimal
                             return $query->whereRaw('(
                                 SELECT COALESCE(SUM(jumlah_tersedia), 0)
                                 FROM bahan_stok_batches
                                 WHERE bahan_stok_batches.bahan_id = bahans.id
-                                AND jumlah_tersedia > 0
                             ) >= bahans.stok_minimal');
                         });
                     }),
@@ -195,7 +232,8 @@ class BahanResource extends Resource implements HasShieldPermissions
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => Auth::user()->can('delete_any_bahan')),
                 ]),
-            ]);
+            ])
+            ->contentFooter(view('filament.admin.resources.bahan-resource.table-footer'));
     }
 
     public static function getPages(): array
