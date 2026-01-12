@@ -19,6 +19,7 @@ use App\Models\TransaksiKalkulasi;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 use App\Filament\Admin\Resources\DeskprintResource\Pages\ManageDeskprints;
 
 class DeskprintResource extends Resource
@@ -32,6 +33,36 @@ class DeskprintResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_deskprint') && Auth::user()->can('view_any_deskprint');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_deskprint');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_deskprint');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_deskprint');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_deskprint');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_deskprint');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_deskprint');
     }
 
     public static function form(Form $form): Form

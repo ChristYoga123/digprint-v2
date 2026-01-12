@@ -19,6 +19,7 @@ use App\Enums\KaryawanPekerjaan\TipeEnum;
 use App\Filament\Admin\Resources\PengajuanLemburResource\Pages;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Database\Eloquent\Model;
 
 class PengajuanLemburResource extends Resource implements HasShieldPermissions
 {
@@ -33,6 +34,36 @@ class PengajuanLemburResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_pengajuan::lembur') && Auth::user()->can('view_any_pengajuan::lembur');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_pengajuan::lembur');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_pengajuan::lembur');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_pengajuan::lembur');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_pengajuan::lembur');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_pengajuan::lembur');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_pengajuan::lembur');
     }
 
     public static function getPermissionPrefixes(): array

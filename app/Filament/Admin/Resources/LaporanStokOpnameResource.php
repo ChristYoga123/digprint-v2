@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use App\Filament\Admin\Resources\LaporanStokOpnameResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Database\Eloquent\Model;
 
 class LaporanStokOpnameResource extends Resource implements HasShieldPermissions
 {
@@ -33,6 +34,36 @@ class LaporanStokOpnameResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_laporan::stok::opname') && Auth::user()->can('view_any_laporan::stok::opname');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_laporan::stok::opname');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_laporan::stok::opname');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function getPermissionPrefixes(): array

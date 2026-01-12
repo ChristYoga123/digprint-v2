@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\BahanResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Admin\Resources\BahanResource\RelationManagers;
+use Illuminate\Database\Eloquent\Model;
 
 
 class BahanResource extends Resource implements HasShieldPermissions
@@ -29,6 +30,36 @@ class BahanResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_bahan') && Auth::user()->can('view_any_bahan');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_bahan');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_bahan');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_bahan');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_bahan');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_bahan');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_bahan');
     }
 
     public static function getPermissionPrefixes(): array

@@ -11,6 +11,7 @@ use App\Enums\KaryawanPekerjaan\TipeEnum;
 use App\Filament\Admin\Resources\LaporanLemburKaryawanResource\Pages;
 use App\Filament\Admin\Resources\LaporanLemburKaryawanResource\Widgets\StatLemburKaryawanWidget;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class LaporanLemburKaryawanResource extends Resource
 {
@@ -29,6 +30,36 @@ class LaporanLemburKaryawanResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_laporan::lembur::karyawan') && Auth::user()->can('view_any_laporan::lembur::karyawan');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_laporan::lembur::karyawan');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_laporan::lembur::karyawan');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function table(Table $table): Table

@@ -17,6 +17,7 @@ use App\Filament\Admin\Resources\KaryawanResource\Pages;
 use App\Filament\Admin\Resources\KaryawanResource\RelationManagers;
 use Illuminate\Support\Facades\Auth;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Database\Eloquent\Model;
 
 class KaryawanResource extends Resource implements HasShieldPermissions
 {
@@ -28,6 +29,36 @@ class KaryawanResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_karyawan') && Auth::user()->can('view_any_karyawan');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_karyawan');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_karyawan');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_karyawan');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_karyawan');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_karyawan');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_karyawan');
     }
     
     public static function getPermissionPrefixes(): array

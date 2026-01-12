@@ -47,6 +47,16 @@ class ProduksiResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_produksi') && Auth::user()->can('view_any_produksi');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_produksi');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_produksi');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

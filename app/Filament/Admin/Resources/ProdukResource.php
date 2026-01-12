@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\ProdukResource\Pages;
 use App\Filament\Admin\Resources\ProdukResource\RelationManagers;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class ProdukResource extends Resource
 {
@@ -27,6 +28,36 @@ class ProdukResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_produk') && Auth::user()->can('view_any_produk');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_produk');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_produk');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_produk');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_produk');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_produk');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_produk');
     }
 
     public static function form(Form $form): Form

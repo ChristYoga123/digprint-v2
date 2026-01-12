@@ -36,6 +36,16 @@ class BahanMutasiFakturResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_bahan::mutasi::faktur') && Auth::user()->can('view_any_bahan::mutasi::faktur');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi::faktur') && Auth::user()->can('view_any_bahan::mutasi::faktur');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi::faktur') && Auth::user()->can('view_any_bahan::mutasi::faktur');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

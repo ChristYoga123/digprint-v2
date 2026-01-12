@@ -40,7 +40,17 @@ class LaporanPiutangCustomerResource extends Resource
     
     public static function shouldRegisterNavigation(): bool
     {
-        return Auth::user()->can('view_laporan::piutang::customer');
+        return Auth::user()->can('view_laporan::piutang::customer') && Auth::user()->can('view_any_laporan::piutang::customer');
+    }
+    
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_laporan::piutang::customer') && Auth::user()->can('view_any_laporan::piutang::customer');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_laporan::piutang::customer') && Auth::user()->can('view_any_laporan::piutang::customer');
     }
 
     public static function canCreate(): bool

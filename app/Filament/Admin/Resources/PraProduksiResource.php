@@ -33,6 +33,16 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_pra::produksi') && Auth::user()->can('view_any_pra::produksi');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_pra::produksi');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_pra::produksi');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

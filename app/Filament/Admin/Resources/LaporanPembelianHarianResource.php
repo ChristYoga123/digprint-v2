@@ -34,6 +34,16 @@ class LaporanPembelianHarianResource extends Resource
         return Auth::user()->can('view_laporan::pembelian::harian') && Auth::user()->can('view_any_laporan::pembelian::harian');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_laporan::pembelian::harian') && Auth::user()->can('view_any_laporan::pembelian::harian');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_laporan::pembelian::harian') && Auth::user()->can('view_any_laporan::pembelian::harian');
+    }
+
     public static function canCreate(): bool
     {
         return false;
@@ -45,6 +55,11 @@ class LaporanPembelianHarianResource extends Resource
     }
 
     public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
     {
         return false;
     }

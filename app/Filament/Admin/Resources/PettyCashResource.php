@@ -11,13 +11,14 @@ use Filament\Support\RawJs;
 use Filament\Resources\Resource;
 use App\Enums\PettyCash\StatusEnum;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\PettyCashResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Admin\Resources\PettyCashResource\RelationManagers;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
-use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
 class PettyCashResource extends Resource implements HasShieldPermissions
 {
@@ -44,6 +45,36 @@ class PettyCashResource extends Resource implements HasShieldPermissions
             'approve_tutup',
             'close_store'
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_petty::cash');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_petty::cash');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_petty::cash');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_petty::cash');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_petty::cash');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_petty::cash');
     }
 
     public static function form(Form $form): Form

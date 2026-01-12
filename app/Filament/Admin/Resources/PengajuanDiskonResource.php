@@ -35,6 +35,16 @@ class PengajuanDiskonResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_pengajuan::diskon') && Auth::user()->can('view_any_pengajuan::diskon');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_pengajuan::diskon');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_pengajuan::diskon');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

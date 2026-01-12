@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use App\Filament\Admin\Resources\StokOpnameResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Database\Eloquent\Model;
 
 class StokOpnameResource extends Resource implements HasShieldPermissions
 {
@@ -32,6 +33,36 @@ class StokOpnameResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_stok::opname') && Auth::user()->can('view_any_stok::opname');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_stok::opname');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_stok::opname');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_stok::opname');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_stok::opname');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_stok::opname');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_stok::opname');
     }
 
     public static function getPermissionPrefixes(): array

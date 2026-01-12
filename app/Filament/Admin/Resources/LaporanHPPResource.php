@@ -40,6 +40,16 @@ class LaporanHPPResource extends Resource
     {
         return Auth::user()->can('view_laporan::h::p::p');
     }
+    
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_laporan::h::p::p');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_laporan::h::p::p');
+    }
 
     public static function canCreate(): bool
     {

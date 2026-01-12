@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\SupplierResource\Pages;
 use App\Filament\Admin\Resources\SupplierResource\RelationManagers;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class SupplierResource extends Resource
 {
@@ -26,6 +27,36 @@ class SupplierResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_supplier') && Auth::user()->can('view_any_supplier');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_supplier');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_supplier');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_supplier');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_supplier');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_supplier');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_supplier');
     }
 
     public static function form(Form $form): Form

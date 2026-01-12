@@ -46,6 +46,16 @@ class FinishingResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_finishing') && Auth::user()->can('view_any_finishing');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_finishing');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_finishing');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

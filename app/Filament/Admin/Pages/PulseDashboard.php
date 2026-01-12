@@ -35,6 +35,16 @@ class PulseDashboard extends Page
     protected static ?string $navigationGroup = 'Sistem';
 
     protected static string $view = 'filament-panels::pages.dashboard';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->can('page_PulseDashboard');
+    }
+
+    public static function canAccess(): bool
+    {
+        return \Illuminate\Support\Facades\Auth::user()->can('page_PulseDashboard');
+    }
  
     public function getColumns(): int|string|array
     {

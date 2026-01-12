@@ -15,7 +15,7 @@ class TransaksiProsesPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_transaksi::proses');
+        return $user->can('view_any_produksi');
     }
 
     /**
@@ -23,7 +23,7 @@ class TransaksiProsesPolicy
      */
     public function view(User $user, TransaksiProses $transaksiProses): bool
     {
-        return $user->can('view_transaksi::proses');
+        return $user->can('view_produksi');
     }
 
     /**
@@ -31,7 +31,7 @@ class TransaksiProsesPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_transaksi::proses');
+        return $user->can('{{ Create }}');
     }
 
     /**
@@ -39,7 +39,7 @@ class TransaksiProsesPolicy
      */
     public function update(User $user, TransaksiProses $transaksiProses): bool
     {
-        return $user->can('update_transaksi::proses');
+        return $user->can('{{ Update }}');
     }
 
     /**
@@ -47,7 +47,7 @@ class TransaksiProsesPolicy
      */
     public function delete(User $user, TransaksiProses $transaksiProses): bool
     {
-        return $user->can('delete_transaksi::proses');
+        return $user->can('{{ Delete }}');
     }
 
     /**
@@ -55,7 +55,7 @@ class TransaksiProsesPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_transaksi::proses');
+        return $user->can('{{ DeleteAny }}');
     }
 
     /**

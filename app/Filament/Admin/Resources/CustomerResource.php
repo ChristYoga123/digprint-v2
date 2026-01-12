@@ -17,6 +17,7 @@ use App\Models\CustomerKategori;
 use Filament\Forms\Get;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerResource extends Resource
 {
@@ -28,6 +29,36 @@ class CustomerResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_customer') && Auth::user()->can('view_any_customer');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_customer');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_customer');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_customer');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_customer');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_customer');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_customer');
     }
 
     public static function form(Form $form): Form

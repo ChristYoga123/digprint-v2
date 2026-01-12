@@ -38,6 +38,16 @@ class PengajuanSubjoinResource extends Resource implements HasShieldPermissions
         return Auth::user()->can('view_pengajuan::subjoin') && Auth::user()->can('view_any_pengajuan::subjoin');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_pengajuan::subjoin');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_pengajuan::subjoin');
+    }
+
     public static function getPermissionPrefixes(): array
     {
         return [

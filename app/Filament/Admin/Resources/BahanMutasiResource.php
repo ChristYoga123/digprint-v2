@@ -39,6 +39,21 @@ class BahanMutasiResource extends Resource
     {
         return Auth::user()->can('view_bahan::mutasi') && Auth::user()->can('view_any_bahan::mutasi');
     }
+    
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi') && Auth::user()->can('view_any_bahan::mutasi');
+    }
+
+    public static function canView(Model $model): bool
+    {
+        return Auth::user()->can('view_bahan::mutasi') && Auth::user()->can('view_any_bahan::mutasi');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_bahan::mutasi');
+    }
 
     public static function canEdit(Model $record): bool
     {

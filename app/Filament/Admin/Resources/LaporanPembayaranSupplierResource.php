@@ -33,6 +33,16 @@ class LaporanPembayaranSupplierResource extends Resource
         return Auth::user()->can('view_laporan::pembayaran::supplier') && Auth::user()->can('view_any_laporan::pembayaran::supplier');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_laporan::pembayaran::supplier');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_laporan::pembayaran::supplier');
+    }
+
     public static function canCreate(): bool
     {
         return false;

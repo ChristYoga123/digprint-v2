@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerKategoriResource extends Resource
 {
@@ -24,6 +25,36 @@ class CustomerKategoriResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_customer::kategori') && Auth::user()->can('view_any_customer::kategori');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_customer::kategori');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_customer::kategori');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_customer::kategori');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_customer::kategori');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_customer::kategori');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_customer::kategori');
     }
 
     public static function form(Form $form): Form

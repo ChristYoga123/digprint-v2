@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class MesinResource extends Resource
 {
@@ -22,6 +23,36 @@ class MesinResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_mesin') && Auth::user()->can('view_any_mesin');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_mesin');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_mesin');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_mesin');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_mesin');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_mesin');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_mesin');
     }
 
     public static function form(Form $form): Form

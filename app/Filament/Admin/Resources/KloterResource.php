@@ -29,6 +29,8 @@ use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Enums\Kloter\StatusEnum as KloterStatusEnum;
 use App\Filament\Admin\Resources\KloterResource\Pages;
 
+use Illuminate\Database\Eloquent\Model;
+
 class KloterResource extends Resource
 {
     protected static ?string $model = Kloter::class;
@@ -40,6 +42,36 @@ class KloterResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_kloter') && Auth::user()->can('view_any_kloter');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_kloter');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_kloter');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_kloter');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_kloter');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_kloter');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_kloter');
     }
 
     public static function form(Form $form): Form

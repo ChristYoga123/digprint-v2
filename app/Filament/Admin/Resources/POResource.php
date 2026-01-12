@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Filament\Admin\Resources\POResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use Illuminate\Database\Eloquent\Model;
 
 class POResource extends Resource implements HasShieldPermissions
 {
@@ -29,6 +30,36 @@ class POResource extends Resource implements HasShieldPermissions
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_p::o') && Auth::user()->can('view_any_p::o');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_p::o');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_p::o');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_p::o');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_p::o');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_p::o');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_p::o');
     }
 
     public static function getPermissionPrefixes(): array

@@ -52,6 +52,11 @@ class KasirPage extends Page implements HasTable, HasForms
     {
         return Auth::user()->can('page_KasirPage');
     }
+    
+    public static function canAccess(): bool
+    {
+        return Auth::user()->can('page_KasirPage');
+    }
 
     protected static string $view = 'filament.admin.pages.kasir-page';
 

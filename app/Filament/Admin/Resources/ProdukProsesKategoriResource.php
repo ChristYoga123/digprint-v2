@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Model;
 
 class ProdukProsesKategoriResource extends Resource
 {
@@ -24,6 +25,36 @@ class ProdukProsesKategoriResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_produk::proses::kategori') && Auth::user()->can('view_any_produk::proses::kategori');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_produk::proses::kategori');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_produk::proses::kategori');
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()->can('create_produk::proses::kategori');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return Auth::user()->can('update_produk::proses::kategori');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return Auth::user()->can('delete_produk::proses::kategori');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return Auth::user()->can('delete_any_produk::proses::kategori');
     }
 
     public static function form(Form $form): Form

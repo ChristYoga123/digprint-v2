@@ -35,6 +35,16 @@ class LaporanHutangSupplierResource extends Resource
         return Auth::user()->can('view_laporan::hutang::supplier') && Auth::user()->can('view_any_laporan::hutang::supplier');
     }
 
+    public static function canViewAny(): bool
+    {
+        return Auth::user()->can('view_any_laporan::hutang::supplier');
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return Auth::user()->can('view_laporan::hutang::supplier');
+    }
+
     public static function canCreate(): bool
     {
         return false;
