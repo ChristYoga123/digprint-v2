@@ -21,14 +21,29 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Admin\Resources\DeskprintResource\Pages\ManageDeskprints;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class DeskprintResource extends Resource
+class DeskprintResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = TransaksiKalkulasi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
     protected static ?string $navigationLabel = 'Deskprint';
     protected static ?string $modelLabel = 'Deskprint';
+
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'lihat_seluruhnya',
+            'lihat_sebagian',
+        ];
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -1276,6 +1291,23 @@ class DeskprintResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(function () {
+                $query = TransaksiKalkulasi::query();
+                
+                // Jika user punya permission lihat_seluruhnya, tampilkan semua data
+                if (Auth::user()->can('lihat_seluruhnya_deskprint')) {
+                    return $query;
+                }
+                
+                // Jika user punya permission lihat_sebagian, tampilkan data sesuai yang dikerjakan
+                if (Auth::user()->can('lihat_sebagian_deskprint')) {
+                    // Filter berdasarkan user yang login (created_by)
+                    return $query->where('created_by', Auth::id());
+                }
+                
+                // Default: tampilkan data kosong jika tidak punya permission apapun
+                return $query->whereRaw('1 = 0');
+            })
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('kode')

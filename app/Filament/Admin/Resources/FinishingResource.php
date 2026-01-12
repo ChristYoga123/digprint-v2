@@ -63,7 +63,9 @@ class FinishingResource extends Resource implements HasShieldPermissions
             'view_any',
             'start_work',
             'send_sample',
-            'complete'
+            'complete',
+            'lihat_seluruhnya_riwayat',
+            'lihat_sebagian_riwayat',
         ];
     }
 

@@ -65,7 +65,9 @@ class ProduksiResource extends Resource implements HasShieldPermissions
             'start_work',
             'send_sample',
             'assign_batch',
-            'complete'
+            'complete',
+            'lihat_seluruhnya_riwayat',
+            'lihat_sebagian_riwayat',
         ];
     }
 

@@ -49,7 +49,9 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
             'view',
             'view_any',
             'start_work',
-            'approve_design'
+            'approve_design',
+            'lihat_seluruhnya_riwayat',
+            'lihat_sebagian_riwayat',
         ];
     }
 
