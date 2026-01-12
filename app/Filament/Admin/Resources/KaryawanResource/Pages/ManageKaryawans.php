@@ -51,23 +51,18 @@ class ManageKaryawans extends ManageRecords
                         $rowNumber = $index + 2; // +2 karena index mulai dari 0 dan header di baris 1
                         
                         try {
-                            // Parse fields dari row
+                            // Parse fields dari row (format: nik, nama, role)
                             $nama = trim($row['nama'] ?? $row['name'] ?? '');
-                            $email = trim($row['email'] ?? '');
                             $nik = trim($row['nik'] ?? '');
                             $roleName = trim($row['role'] ?? $row['roles'] ?? '');
-                            $noHp = trim($row['no_hp'] ?? $row['phone'] ?? '');
                             
                             // Skip empty rows
-                            if (empty($nama) || empty($email)) {
+                            if (empty($nama)) {
                                 continue;
                             }
                             
-                            // Validasi email format
-                            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                                $errors[] = "Baris {$rowNumber}: Email '{$email}' tidak valid.";
-                                continue;
-                            }
+                            // Generate email dari nama: hapus spasi, lowercase, + @gmail.com
+                            $email = strtolower(str_replace(' ', '', $nama)) . '@gmail.com';
                             
                             // Cek apakah user sudah ada (berdasarkan email atau NIK)
                             $existingUser = User::where('email', $email);
@@ -86,10 +81,8 @@ class ManageKaryawans extends ManageRecords
                                 $nik = 'KRY-' . str_pad(User::max('id') + $imported + 1, 5, '0', STR_PAD_LEFT);
                             }
                             
-                            // Generate no_hp random jika kosong
-                            if (empty($noHp)) {
-                                $noHp = '08' . rand(100000000, 999999999);
-                            }
+                            // Generate no_hp random
+                            $noHp = '08' . rand(100000000, 999999999);
                             
                             // Ambil alamat random
                             $alamat = self::$randomAddresses[array_rand(self::$randomAddresses)];
@@ -185,12 +178,11 @@ class ManageKaryawans extends ManageRecords
                 ->visible(fn () => Auth::user()->can('import_karyawan'))
                 ->action(function () {
                     // Generate template Excel dengan header yang dibutuhkan
-                    // Format: nik, nama, role, email
+                    // Format: nik, nama, role (email di-generate otomatis dari nama)
                     $headers = [
                         'nik',
                         'nama',
                         'role',
-                        'email',
                     ];
                     
                     // Contoh data sesuai format user
@@ -199,19 +191,16 @@ class ManageKaryawans extends ManageRecords
                             '2009186009',
                             'Alim Rusdy',
                             'kepala giri',
-                            'alimrusdy@gmail.com',
                         ],
                         [
                             '2009284006',
                             'Adi Sofyan',
                             'pricing',
-                            'adisofyan@gmail.com',
                         ],
                         [
                             '2012295005',
                             'Fahrul Rizal Ramadani',
                             'Kabag Printing',
-                            'fahrulrizalramadani@gmail.com',
                         ],
                     ];
                     
