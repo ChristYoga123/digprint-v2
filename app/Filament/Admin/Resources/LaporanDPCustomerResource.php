@@ -37,6 +37,11 @@ class LaporanDPCustomerResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Mutasi DP';
     
     protected static ?int $navigationSort = 11;
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::d::p::customer');
+    }
 
     public static function canCreate(): bool
     {

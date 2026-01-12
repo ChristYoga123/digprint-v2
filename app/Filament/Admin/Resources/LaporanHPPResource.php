@@ -35,6 +35,11 @@ class LaporanHPPResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan HPP';
     
     protected static ?int $navigationSort = 10;
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::h::p::p');
+    }
 
     public static function canCreate(): bool
     {

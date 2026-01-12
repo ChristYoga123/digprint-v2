@@ -6,6 +6,7 @@ use App\Models\Transaksi;
 use App\Models\TransaksiProsesBahanUsage;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Number;
 
 class DashboardStatsWidget extends BaseWidget
@@ -13,6 +14,11 @@ class DashboardStatsWidget extends BaseWidget
     protected static ?int $sort = 1;
     
     protected int | string | array $columnSpan = 'full';
+    
+    public static function canView(): bool
+    {
+        return Auth::user()->can('widget_DashboardStatsWidget');
+    }
 
     protected function getStats(): array
     {

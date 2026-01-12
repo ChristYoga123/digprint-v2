@@ -37,6 +37,11 @@ class LaporanPiutangCustomerResource extends Resource
     protected static ?string $pluralModelLabel = 'Laporan Piutang Customer';
     
     protected static ?int $navigationSort = 12;
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()->can('view_laporan::piutang::customer');
+    }
 
     public static function canCreate(): bool
     {
