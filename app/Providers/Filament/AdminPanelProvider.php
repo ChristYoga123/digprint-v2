@@ -123,7 +123,11 @@ class AdminPanelProvider extends PanelProvider
                             ->items([
                                 ...PettyCashResource::getNavigationItems(),
                                 ...DeskprintResource::getNavigationItems(),
-                                ...KasirPage::getNavigationItems(),
+                                NavigationItem::make('Kasir')
+                                    ->icon('heroicon-o-currency-dollar')
+                                    ->visible(fn() => auth()->user()->can('page_KasirPage'))
+                                    ->url(fn() => KasirPage::getUrl())
+                                    ->isActiveWhen(fn() => request()->routeIs('filament.admin.pages.kasir-page')),
                                 ...TransaksiResource::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Pengajuan')
