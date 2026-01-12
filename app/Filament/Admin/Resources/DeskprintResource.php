@@ -27,6 +27,7 @@ class DeskprintResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
     protected static ?string $navigationLabel = 'Deskprint';
+    protected static ?string $modelLabel = 'Deskprint';
 
     public static function shouldRegisterNavigation(): bool
     {
