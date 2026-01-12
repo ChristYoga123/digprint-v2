@@ -185,29 +185,33 @@ class ManageKaryawans extends ManageRecords
                 ->visible(fn () => Auth::user()->can('import_karyawan'))
                 ->action(function () {
                     // Generate template Excel dengan header yang dibutuhkan
+                    // Format: nik, nama, role, email
                     $headers = [
-                        'nama',
-                        'email',
                         'nik',
-                        'no_hp',
+                        'nama',
                         'role',
+                        'email',
                     ];
                     
-                    // Contoh data untuk membantu user memahami format
+                    // Contoh data sesuai format user
                     $exampleRows = [
                         [
-                            'John Doe',
-                            'john@example.com',
-                            'KRY-00001',
-                            '081234567890',
-                            'operator',
+                            '2009186009',
+                            'Alim Rusdy',
+                            'kepala giri',
+                            'alimrusdy@gmail.com',
                         ],
                         [
-                            'Jane Smith',
-                            'jane@example.com',
-                            'KRY-00002',
-                            '081234567891',
-                            'admin, manager', // Contoh multiple roles
+                            '2009284006',
+                            'Adi Sofyan',
+                            'pricing',
+                            'adisofyan@gmail.com',
+                        ],
+                        [
+                            '2012295005',
+                            'Fahrul Rizal Ramadani',
+                            'Kabag Printing',
+                            'fahrulrizalramadani@gmail.com',
                         ],
                     ];
                     
