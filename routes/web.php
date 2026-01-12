@@ -8,7 +8,7 @@ use App\Http\Controllers\StokOpnameExportController;
 use Illuminate\Support\Facades\Route;
 
 // Login Routes
-Route::get('/', [LoginController::class, 'index'])->name('login');
+Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('login.authenticate');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
