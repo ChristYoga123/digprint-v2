@@ -12,6 +12,7 @@ Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('login.authenticate');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+Route::redirect('/', '/login');
 // Print SPK Route
 Route::get('/print/spk', [PrintSpkController::class, 'print'])->name('print.spk');
 
