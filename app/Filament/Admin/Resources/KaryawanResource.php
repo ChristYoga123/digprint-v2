@@ -16,8 +16,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\KaryawanResource\Pages;
 use App\Filament\Admin\Resources\KaryawanResource\RelationManagers;
 use Illuminate\Support\Facades\Auth;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
-class KaryawanResource extends Resource
+class KaryawanResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = User::class;
 
@@ -27,6 +28,19 @@ class KaryawanResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return Auth::user()->can('view_karyawan') && Auth::user()->can('view_any_karyawan');
+    }
+    
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'import',
+        ];
     }
 
     public static function form(Form $form): Form
