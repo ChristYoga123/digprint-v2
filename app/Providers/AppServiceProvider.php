@@ -8,6 +8,8 @@ use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use Illuminate\Database\Eloquent\Model;
 use App\Contracts\WhatsappInterface;
 use App\Services\FontteService;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
+use App\Http\Responses\LogoutResponse;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Bind WhatsappInterface to FontteService
         $this->app->bind(WhatsappInterface::class, FontteService::class);
+        
+        // Bind custom LogoutResponse untuk redirect ke halaman login setelah logout
+        $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
     }
 
     /**

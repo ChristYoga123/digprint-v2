@@ -86,7 +86,7 @@ class SendNotaWhatsappJob implements ShouldQueue
         $diskon = $transaksi->total_diskon_transaksi ?? 0;
         $totalDibayar = formatRupiah($transaksi->jumlah_bayar ?? 0);
 
-        $message = "🧾 *NOTA TRANSAKSI*\n";
+        $message = "🧾 *NOTA ELEKTRONIK*\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━\n";
         $message .= "*Invoice:* {$transaksi->kode}\n";
         $message .= "*Customer:* {$transaksi->customer->nama}\n";
@@ -113,7 +113,8 @@ class SendNotaWhatsappJob implements ShouldQueue
 
         $message .= "━━━━━━━━━━━━━━━━━━━━\n\n";
 
-        $message .= "Terima kasih telah berbelanja di *" . config('app.name', 'DigPrint') . "*! 🙏";
+        $message .= "Terima kasih telah berbelanja! 🙏\n";
+        $message .= "_Sent by *Grafis*_";
 
         return $message;
     }

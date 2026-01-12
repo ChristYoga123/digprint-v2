@@ -12,7 +12,7 @@ use App\Filament\Admin\Pages\KasirPage;
 use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationGroup;
 use App\Filament\Admin\Pages\ProduksiPage;
-use Filament\Http\Middleware\Authenticate;
+use App\Http\Middleware\Authenticate;
 use Filament\Navigation\NavigationBuilder;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
 use App\Filament\Admin\Pages\FinishingPage;
@@ -73,7 +73,6 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
             ->colors([
                 'primary' => Color::Green,
             ])

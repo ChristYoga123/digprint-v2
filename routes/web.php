@@ -1,14 +1,16 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PrintNotaController;
 use App\Http\Controllers\PrintSpkController;
 use App\Http\Controllers\StokOpnamePrintController;
 use App\Http\Controllers\StokOpnameExportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Login Routes
+Route::get('/', [LoginController::class, 'index'])->name('login');
+Route::post('/login', [LoginController::class, 'authenticate'])->name('login.authenticate');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Print SPK Route
 Route::get('/print/spk', [PrintSpkController::class, 'print'])->name('print.spk');
@@ -28,4 +30,3 @@ Route::middleware('auth')->group(function () {
     Route::get('/export/stok-opname', [StokOpnameExportController::class, 'exportAll'])
         ->name('stok-opname.export-all');
 });
-

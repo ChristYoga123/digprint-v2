@@ -654,10 +654,10 @@
             {{-- A4 LAYOUT --}}
             <div class="nota-header">
                 <div class="header-left">
-                    <div class="shop-name">DIGPRINT</div>
+                    <div class="shop-name">GRAFIS</div>
                     <div class="shop-info">
                         Jl. Contoh Alamat No. 123<br>
-                        Telp: 0812-3456-7890 | Email: info@digprint.com
+                        Telp: 0812-3456-7890 | Email: info@grafis.com
                     </div>
                 </div>
                 <div class="header-right">
@@ -668,7 +668,7 @@
         @else
             {{-- THERMAL & A5 LAYOUT --}}
             <div class="nota-header">
-                <div class="shop-name">DIGPRINT</div>
+                <div class="shop-name">GRAFIS</div>
                 <div class="shop-info">Jl. Contoh Alamat No. 123 | Telp: 0812-3456-7890</div>
                 @if ($size === 'a5')
                     <div class="nota-title">INVOICE</div>
