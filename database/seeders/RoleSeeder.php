@@ -22,15 +22,17 @@ class RoleSeeder extends Seeder
         Role::findOrCreate('kasir');
         Role::findOrCreate('operator');
         Role::findOrCreate('ppic');
+        Role::findOrCreate('customer');
 
         // TODO: Add other users here
 
         $superAdmin = User::query()
-            ->create([
+            ->firstOrCreate([
                 'name' => 'Super Admin',
                 'email' => 'superadmin@gmail.com',
-                'password' => Hash::make('password'),
                 'is_active' => true,
+            ], [
+                'password' => Hash::make('password'),
             ]);
 
         // TODO: Add role assignments here
