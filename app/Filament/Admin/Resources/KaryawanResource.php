@@ -150,7 +150,6 @@ class KaryawanResource extends Resource implements HasShieldPermissions
     public static function table(Table $table): Table
     {
         return $table
-            ->query(User::query()->withoutRole('customer'))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
