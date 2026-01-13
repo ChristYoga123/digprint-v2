@@ -17,7 +17,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
-            DigprintSeeder::class,
+            MasterDataSeeder::class, // Data master wajib
+            // DigprintSeeder::class, // Uncomment untuk sample data lengkap (customer, supplier, produk, dll)
         ]);
     }
 }
