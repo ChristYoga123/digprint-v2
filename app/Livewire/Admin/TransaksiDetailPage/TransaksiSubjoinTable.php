@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Enums\Transaksi\StatusTransaksiEnum;
+use App\Models\ProdukProsesKategori;
 
 class TransaksiSubjoinTable extends Component implements HasTable, HasForms
 {
@@ -99,7 +100,7 @@ class TransaksiSubjoinTable extends Component implements HasTable, HasForms
                                 }
 
                                 // Jika proses design (kategori 1), update status transaksi ke PRODUKSI
-                                if ($transaksiProses->produkProses->produk_proses_kategori_id == 1) {
+                                if ($transaksiProses->produkProses->produk_proses_kategori_id == ProdukProsesKategori::praProduksiId()) {
                                     if ($transaksiProduk->transaksi->status_transaksi === StatusTransaksiEnum::BELUM) {
                                         $transaksiProduk->transaksi->update([
                                             'status_transaksi' => StatusTransaksiEnum::PRODUKSI->value,

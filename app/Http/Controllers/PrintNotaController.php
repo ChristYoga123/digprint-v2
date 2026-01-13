@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaksi;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Http\Request;
 
 class PrintNotaController extends Controller
@@ -72,7 +73,7 @@ class PrintNotaController extends Controller
             $addonsTotal = 0;
             // Filter addon dari transaksi proses (Kategori 3)
             $addonProses = $produk->transaksiProses
-                ->filter(fn($tp) => $tp->produkProses && $tp->produkProses->produk_proses_kategori_id == 3);
+                ->filter(fn($tp) => $tp->produkProses && $tp->produkProses->produk_proses_kategori_id == ProdukProsesKategori::finishingId());
             
             foreach ($addonProses as $tp) {
                 $price = (float) $tp->produkProses->harga;

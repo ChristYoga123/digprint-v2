@@ -15,6 +15,7 @@ use App\Models\KaryawanPekerjaan;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
 use App\Enums\BahanMutasi\TipeEnum;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
@@ -104,20 +105,20 @@ class FinishingResource extends Resource implements HasShieldPermissions
                     // Has addons (kategori = 3)
                     ->whereHas('transaksiProses', function($query) {
                         $query->whereHas('produkProses', function($q) {
-                            $q->where('produk_proses_kategori_id', 3); // Addon/Finishing
+                            $q->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()); // Addon/Finishing
                         });
                     })
                     // All production processes completed
                     ->whereDoesntHave('transaksiProses', function($query) {
                         $query->whereHas('produkProses', function($q) {
-                            $q->where('produk_proses_kategori_id', 2); // Produksi
+                            $q->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId()); // Produksi
                         })
                         ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value);
                     })
                     // Has uncompleted addons (yang tidak subjoin)
                     ->whereHas('transaksiProses', function($query) {
                         $query->whereHas('produkProses', function($q) {
-                            $q->where('produk_proses_kategori_id', 3);
+                            $q->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId());
                         })
                         ->whereIn('status_proses', [StatusProsesEnum::BELUM, StatusProsesEnum::DALAM_PROSES])
                         ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin
@@ -127,7 +128,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         'produk',
                         'transaksiProses' => function($query) {
                             $query->whereHas('produkProses', function($q) {
-                                $q->where('produk_proses_kategori_id', 3);
+                                $q->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId());
                             })
                             ->orderBy('urutan');
                         },
@@ -150,7 +151,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                     ->label('Addon/Finishing')
                     ->getStateUsing(function(TransaksiProduk $record) {
                         $addons = $record->transaksiProses
-                            ->filter(fn($tp) => $tp->produkProses?->produk_proses_kategori_id == 3)
+                            ->filter(fn($tp) => $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId())
                             ->map(function($tp) {
                                 $status = $tp->status_proses === StatusProsesEnum::SELESAI ? '✓' : '○';
                                 return $status . ' ' . $tp->produkProses->nama;
@@ -168,7 +169,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Cek status dari addon yang belum selesai
                         $unfinishedAddon = $record->transaksiProses
                             ->filter(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->status_proses !== StatusProsesEnum::SELESAI
                                 && !$tp->apakah_menggunakan_subjoin
                             )
@@ -203,7 +204,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Cek apakah ada proses finishing yang masih BELUM
                         $hasUnstarted = $record->transaksiProses
                             ->contains(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->status_proses === StatusProsesEnum::BELUM
                                 && !$tp->apakah_menggunakan_subjoin
                             );
@@ -212,7 +213,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                     ->action(function(TransaksiProduk $record) {
                         // Update semua proses finishing yang BELUM menjadi DALAM_PROSES
                         $record->transaksiProses
-                            ->where('produkProses.produk_proses_kategori_id', 3)
+                            ->where('produkProses.produk_proses_kategori_id', ProdukProsesKategori::finishingId())
                             ->where('status_proses', StatusProsesEnum::BELUM->value)
                             ->each(function($tp) {
                                 if (!$tp->apakah_menggunakan_subjoin) {
@@ -234,7 +235,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Ambil proses addon yang perlu sample approval
                         $proses = $record->transaksiProses
                             ->first(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->apakah_perlu_sample_approval
                                 && $tp->produkProses?->apakah_mengurangi_bahan
                                 && $tp->status_proses != StatusProsesEnum::SELESAI
@@ -249,7 +250,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                     ->modalDescription(function(TransaksiProduk $record) {
                         $proses = $record->transaksiProses
                             ->first(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->apakah_perlu_sample_approval
                                 && $tp->produkProses?->apakah_mengurangi_bahan
                             );
@@ -260,7 +261,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Tampilkan jika ada proses addon yang perlu sample approval DAN sudah dimulai
                         $hasSampleNeeded = $record->transaksiProses
                             ->contains(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->apakah_perlu_sample_approval
                                 && $tp->produkProses?->apakah_mengurangi_bahan
                                 && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
@@ -273,7 +274,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                             // Increment jumlah_sample untuk proses finishing yang perlu sample approval
                             $proses = $record->transaksiProses
                                 ->first(fn($tp) => 
-                                    $tp->produkProses?->produk_proses_kategori_id == 3 
+                                    $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                     && $tp->apakah_perlu_sample_approval
                                     && $tp->produkProses?->apakah_mengurangi_bahan
                                     && $tp->status_proses != StatusProsesEnum::SELESAI
@@ -309,7 +310,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Dan hanya tampilkan jika ada yang sudah dimulai (DALAM_PROSES)
                         $nonSubjoinAddons = $record->transaksiProses
                             ->filter(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             );
@@ -319,7 +320,7 @@ class FinishingResource extends Resource implements HasShieldPermissions
                         // Hanya tampilkan addon yang bukan subjoin dan sudah dimulai (DALAM_PROSES)
                         $addonOptions = $record->transaksiProses
                             ->filter(fn($tp) => 
-                                $tp->produkProses?->produk_proses_kategori_id == 3 
+                                $tp->produkProses?->produk_proses_kategori_id == ProdukProsesKategori::finishingId() 
                                 && $tp->status_proses === StatusProsesEnum::DALAM_PROSES
                                 && !$tp->apakah_menggunakan_subjoin
                             )

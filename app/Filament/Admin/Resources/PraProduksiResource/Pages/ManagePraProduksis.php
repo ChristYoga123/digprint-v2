@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\PraProduksiResource;
 use App\Models\TransaksiProses;
 use App\Models\KaryawanPekerjaan;
 use App\Enums\TransaksiProses\StatusProsesEnum;
+use App\Models\ProdukProsesKategori;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Tables\Table;
@@ -33,7 +34,7 @@ class ManagePraProduksis extends ManageRecords
                     $query = TransaksiProses::query()
                         ->where('status_proses', StatusProsesEnum::SELESAI->value)
                         ->whereHas('produkProses', function($q) {
-                            $q->where('produk_proses_kategori_id', 1); // Design
+                            $q->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()); // Design
                         })
                         ->with([
                             'transaksiProduk.transaksi.customer',

@@ -15,6 +15,7 @@ use App\Models\KaryawanPekerjaan;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
 use App\Enums\BahanMutasi\TipeEnum;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
@@ -107,7 +108,7 @@ class ProduksiResource extends Resource implements HasShieldPermissions
             ->query(
                 TransaksiProses::query()
                     ->whereHas('produkProses', function($query) use ($userMesinIds) {
-                        $query->where('produk_proses_kategori_id', 2) // Produksi only
+                        $query->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId()) // Produksi only
                             ->whereIn('mesin_id', $userMesinIds);
                     })
                     ->whereIn('status_proses', [
@@ -120,7 +121,7 @@ class ProduksiResource extends Resource implements HasShieldPermissions
                         $query->whereDoesntHave('transaksiProses', function($q) {
                             $q->where('urutan', 1)
                                 ->whereHas('produkProses', function($prod) {
-                                    $prod->where('produk_proses_kategori_id', 1); // Design
+                                    $prod->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()); // Design
                                 })
                                 ->where('status_proses', '!=', StatusProsesEnum::SELESAI->value);
                         });

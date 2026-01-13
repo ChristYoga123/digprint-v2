@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use App\Enums\Transaksi\StatusTransaksiEnum;
 use App\Enums\TransaksiProses\StatusProsesEnum;
 use App\Filament\Admin\Resources\PraProduksiResource\Pages;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Support\Facades\Auth;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
@@ -90,7 +91,7 @@ class PraProduksiResource extends Resource implements HasShieldPermissions
                     ->whereHas('transaksiProses', function($query) {
                         $query->where('urutan', 1)
                             ->whereHas('produkProses', function($q) {
-                                $q->where('produk_proses_kategori_id', 1); // Design
+                                $q->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()); // Design
                             })
                             ->whereIn('status_proses', [StatusProsesEnum::BELUM, StatusProsesEnum::DALAM_PROSES])
                             ->where('apakah_menggunakan_subjoin', false); // Hanya yang tidak subjoin

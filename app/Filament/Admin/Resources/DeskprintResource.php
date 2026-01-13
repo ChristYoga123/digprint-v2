@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Admin\Resources\DeskprintResource\Pages\ManageDeskprints;
+use App\Models\ProdukProsesKategori;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 
 class DeskprintResource extends Resource implements HasShieldPermissions
@@ -262,7 +263,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             }
 
                                             $designs = ProdukProses::where('produk_id', $produkId)
-                                                ->where('produk_proses_kategori_id', 1) // Design
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                                                 ->whereNotNull('harga')
                                                 ->get();
 
@@ -348,7 +349,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             
                                             // Ambil addon yang terhubung dengan produk ini (ProdukProses dengan kategori Finishing)
                                             $addons = ProdukProses::where('produk_id', $produkId)
-                                                ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                                                 ->whereNotNull('harga')
                                                 ->get();
                                             
@@ -372,7 +373,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             }
                                             
                                             $addons = ProdukProses::where('produk_id', $produkId)
-                                                ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                                                 ->whereNotNull('harga')
                                                 ->get();
                                             
@@ -418,7 +419,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             }
                                             
                                             $addonCount = ProdukProses::where('produk_id', $produkId)
-                                                ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                                                 ->whereNotNull('harga')
                                                 ->count();
                                             if ($addonCount === 0) {
@@ -451,7 +452,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             
                                             // 2. Proses Produksi (selalu tampil karena wajib dan mengurangi bahan)
                                             $produksiProses = ProdukProses::where('produk_id', $produkId)
-                                                ->where('produk_proses_kategori_id', 2) // Produksi
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId()) // Produksi
                                                 ->where('apakah_mengurangi_bahan', true)
                                                 ->get();
                                             
@@ -481,7 +482,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             // Tampilkan jika ada proses yang mengurangi bahan
                                             return ProdukProses::where('produk_id', $produkId)
                                                 ->where('apakah_mengurangi_bahan', true)
-                                                ->whereIn('produk_proses_kategori_id', [2, 3])
+                                                ->whereIn('produk_proses_kategori_id', [ProdukProsesKategori::produksiId(), ProdukProsesKategori::finishingId()])
                                                 ->exists();
                                         })
                                         ->helperText('Pilih proses yang memerlukan approval sample dari customer sebelum produksi penuh')
@@ -855,7 +856,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                                 // Hitung dan tampilkan design
                                                 $totalDesign = 0.0;
                                                 if (isset($produk['design_id']) && !empty($produk['design_id'])) {
-                                                $design = ProdukProses::where('id', $produk['design_id'])->where('produk_proses_kategori_id', 1)->first();
+                                                $design = ProdukProses::where('id', $produk['design_id'])->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId())->first();
                                                     if ($design) {
                                                         $html .= '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f3f4f6;">';
                                                         $html .= '<strong>Design:</strong><br>';
@@ -869,7 +870,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                                 // Hitung dan tampilkan addon
                                                 $totalAddon = 0.0;
                                                 if (isset($produk['addons']) && is_array($produk['addons']) && !empty($produk['addons'])) {
-                                                    $addons = ProdukProses::whereIn('id', $produk['addons'])->whereNotNull('harga')->where('produk_proses_kategori_id', 3)->get();
+                                                    $addons = ProdukProses::whereIn('id', $produk['addons'])->whereNotNull('harga')->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId())->get();
                                                     if ($addons->count() > 0) {
                                                         $html .= '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f3f4f6;">';
                                                         $html .= '<strong>Addons:</strong><br>';
@@ -1005,7 +1006,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                         // Tambah harga design (single value)
                                         if (isset($produk['design_id']) && !empty($produk['design_id'])) {
                                             $designProses = ProdukProses::where('id', $produk['design_id'])
-                                                ->where('produk_proses_kategori_id', 1) // Design
+                                                ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                                                 ->first();
                                             if ($designProses) {
                                                 $totalProduk += (float) ($designProses->harga ?? 0);
@@ -1020,7 +1021,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                                             
                                             if (!empty($addonsArray)) {
                                                 $totalAddon = ProdukProses::whereIn('id', $addonsArray)
-                                                    ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                                                    ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                                                     ->whereNotNull('harga')
                                                     ->sum('harga');
                                                 $totalProduk += (float) ($totalAddon * $jumlahFloat);
@@ -1169,7 +1170,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
         // Tambah harga design (single value, bukan array)
         if (isset($data['design_id']) && !empty($data['design_id'])) {
             $designProses = ProdukProses::where('id', $data['design_id'])
-                ->where('produk_proses_kategori_id', 1) // Design
+                ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                 ->first();
             if ($designProses) {
                 $totalProduk += (float) ($designProses->harga ?? 0);
@@ -1185,7 +1186,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
             
             if (!empty($addonsArray)) {
                 $totalAddon = ProdukProses::whereIn('id', $addonsArray)
-                    ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                    ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                     ->whereNotNull('harga')
                     ->sum('harga');
                 $totalProduk += (float) ($totalAddon * $jumlahFloat);
@@ -1244,7 +1245,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
             // Tambah harga design (single value)
             if ($produk->design_id) {
                 $designProses = ProdukProses::where('id', $produk->design_id)
-                    ->where('produk_proses_kategori_id', 1) // Design
+                    ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                     ->whereNotNull('harga')
                     ->first();
                 if ($designProses) {
@@ -1260,7 +1261,7 @@ class DeskprintResource extends Resource implements HasShieldPermissions
                 
                 if (!empty($addonsArray)) {
                     $totalAddon = ProdukProses::whereIn('id', $addonsArray)
-                        ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                        ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                         ->whereNotNull('harga')
                         ->sum('harga');
                     $totalProduk += (float) $totalAddon;

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TransaksiProduk;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Http\Request;
 
 class PrintSpkController extends Controller
@@ -110,7 +111,7 @@ class PrintSpkController extends Controller
         $finishingProcesses = $transaksiProduk->transaksiProses
             ->filter(function($proses) {
                 // Kategori 3 = Finishing (based on typical seeder data)
-                return $proses->produkProses->produk_proses_kategori_id == 3;
+                return $proses->produkProses->produk_proses_kategori_id == ProdukProsesKategori::finishingId();
             })
             ->map(function($proses) {
                 return $proses->produkProses->nama;

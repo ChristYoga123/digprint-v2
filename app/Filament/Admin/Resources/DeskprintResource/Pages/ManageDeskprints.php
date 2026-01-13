@@ -9,6 +9,7 @@ use App\Models\ProdukProses;
 use App\Models\KaryawanPekerjaan;
 use App\Models\TransaksiKalkulasi;
 use App\Enums\KaryawanPekerjaan\TipeEnum;
+use App\Models\ProdukProsesKategori;
 use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Contracts\Support\Htmlable;
@@ -101,7 +102,7 @@ class ManageDeskprints extends ManageRecords
             // Tambah harga design (single value, bukan array)
             if ($produk->design_id) {
                 $designProses = ProdukProses::where('id', $produk->design_id)
-                    ->where('produk_proses_kategori_id', 1) // Design
+                    ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                     ->first();
                 if ($designProses) {
                     $totalProduk += (float) ($designProses->harga ?? 0);
@@ -116,7 +117,7 @@ class ManageDeskprints extends ManageRecords
                 
                 if (!empty($addonsArray)) {
                     $totalAddon = ProdukProses::whereIn('id', $addonsArray)
-                        ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                        ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                         ->whereNotNull('harga')
                         ->sum('harga');
                     $totalProduk += (float) ($totalAddon * $jumlahFloat);
@@ -205,7 +206,7 @@ class ManageDeskprints extends ManageRecords
             // Tambah harga design (single value, bukan array)
             if (isset($produk['design_id']) && !empty($produk['design_id']) && $produk['design_id'] !== 'none') {
                 $designProses = ProdukProses::where('id', $produk['design_id'])
-                    ->where('produk_proses_kategori_id', 1) // Design
+                    ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
                     ->first();
                 if ($designProses) {
                     $totalProduk += (float) ($designProses->harga ?? 0);
@@ -220,7 +221,7 @@ class ManageDeskprints extends ManageRecords
                 
                 if (!empty($addonsArray)) {
                     $totalAddon = ProdukProses::whereIn('id', $addonsArray)
-                        ->where('produk_proses_kategori_id', 3) // Finishing/Addon
+                        ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId()) // Finishing/Addon
                         ->whereNotNull('harga')
                         ->sum('harga');
                     $totalProduk += (float) ($totalAddon * $jumlahFloat);

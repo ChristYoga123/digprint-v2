@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Admin\Resources\ProdukResource\Pages;
 use App\Filament\Admin\Resources\ProdukResource\RelationManagers;
+use App\Models\ProdukProsesKategori;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 
@@ -225,12 +226,12 @@ class ProdukResource extends Resource
                         Forms\Components\Repeater::make('produkProsesDesign')
                             ->label('Opsi Design')
                             ->relationship('produkProses', function ($query) {
-                                return $query->where('produk_proses_kategori_id', 1); // Design
+                                return $query->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId());
                             })
                             ->defaultItems(0)
                             ->schema([
                                 Forms\Components\Hidden::make('produk_proses_kategori_id')
-                                    ->default(1), // Design
+                                    ->default(fn () => ProdukProsesKategori::praProduksiId()),
                                 Forms\Components\Hidden::make('urutan')
                                     ->default(0), // Design selalu di awal (urutan 0)
                                 Forms\Components\Hidden::make('proses_id'),
@@ -240,7 +241,7 @@ class ProdukResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->options(function () {
-                                        return \App\Models\Proses::where('produk_proses_kategori_id', 1)
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId())
                                             ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
@@ -250,7 +251,7 @@ class ProdukResource extends Resource
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan isi harga default jika ada
-                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 1)
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId())
                                             ->where('nama', $state)
                                             ->first();
                                         if ($proses) {
@@ -297,7 +298,7 @@ class ProdukResource extends Resource
                                     ->createOptionUsing(function (array $data) {
                                         // Cek apakah proses dengan nama yang sama sudah ada
                                         $existingProses = \App\Models\Proses::where('nama', $data['nama'])
-                                            ->where('produk_proses_kategori_id', 1)
+                                            ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId())
                                             ->first();
                                         
                                         if ($existingProses) {
@@ -311,7 +312,7 @@ class ProdukResource extends Resource
                                         // Jika belum ada, buat baru
                                         $proses = \App\Models\Proses::create([
                                             'nama' => $data['nama'],
-                                            'produk_proses_kategori_id' => 1, // Design
+                                            'produk_proses_kategori_id' => ProdukProsesKategori::praProduksiId(),
                                             'harga_default' => $data['harga_default'] ?? null,
                                         ]);
                                         return $proses->nama;
@@ -334,12 +335,12 @@ class ProdukResource extends Resource
                             ->itemLabel(fn (array $state): ?string => $state['nama'] ?? 'Design Baru')
                             ->helperText('Jika produk tidak memerlukan opsi design, kosongkan saja bagian ini.')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                $data['produk_proses_kategori_id'] = 1; // Design
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::praProduksiId();
                                 $data['urutan'] = 0; // Design selalu di awal
                                 return $data;
                             })
                             ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
-                                $data['produk_proses_kategori_id'] = 1; // Design
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::praProduksiId();
                                 $data['urutan'] = 0; // Design selalu di awal
                                 return $data;
                             }),
@@ -357,7 +358,7 @@ class ProdukResource extends Resource
                         Forms\Components\Repeater::make('produkProsesProduksi')
                             ->label('Proses Produksi')
                             ->relationship('produkProses', function ($query) {
-                                return $query->where('produk_proses_kategori_id', 2); // Produksi
+                                return $query->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId());
                             })
                             ->reorderable()
                             ->live()
@@ -385,7 +386,7 @@ class ProdukResource extends Resource
                             })
                             ->schema([
                                 Forms\Components\Hidden::make('produk_proses_kategori_id')
-                                    ->default(1), // Produksi
+                                    ->default(fn () => ProdukProsesKategori::produksiId()),
                                 Forms\Components\Hidden::make('urutan')
                                     ->default(1),
                                 Forms\Components\Hidden::make('proses_id'),
@@ -395,7 +396,7 @@ class ProdukResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->options(function () {
-                                        return \App\Models\Proses::where('produk_proses_kategori_id', 2)
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::produksiId())
                                             ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
@@ -405,7 +406,7 @@ class ProdukResource extends Resource
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan link-kan
-                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 2)
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::produksiId())
                                             ->where('nama', $state)
                                             ->first();
                                         if ($proses) {
@@ -450,7 +451,7 @@ class ProdukResource extends Resource
                                     ->createOptionUsing(function (array $data) {
                                         // Cek apakah proses dengan nama yang sama sudah ada
                                         $existingProses = \App\Models\Proses::where('nama', $data['nama'])
-                                            ->where('produk_proses_kategori_id', 2)
+                                            ->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId())
                                             ->first();
                                         
                                         if ($existingProses) {
@@ -464,7 +465,7 @@ class ProdukResource extends Resource
                                         // Jika belum ada, buat baru
                                         $proses = \App\Models\Proses::create([
                                             'nama' => $data['nama'],
-                                            'produk_proses_kategori_id' => 2, // Produksi
+                                            'produk_proses_kategori_id' => ProdukProsesKategori::produksiId(),
                                             'harga_default' => $data['harga_default'] ?? null,
                                         ]);
                                         return $proses->nama;
@@ -579,7 +580,7 @@ class ProdukResource extends Resource
                             ])
                             ->itemLabel(fn (array $state): ?string => $state['nama'] ?? 'Proses Baru')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data, $state, $get): array {
-                                $data['produk_proses_kategori_id'] = 2; // Produksi
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::produksiId();
                                 // Mengisi urutan dari state jika sudah ada, jika tidak gunakan posisi di array
                                 if (isset($data['urutan']) && is_numeric($data['urutan'])) {
                                     $data['urutan'] = (int) $data['urutan'];
@@ -595,7 +596,7 @@ class ProdukResource extends Resource
                                 return $data;
                             })
                             ->mutateRelationshipDataBeforeSaveUsing(function (array $data, $state, $get): array {
-                                $data['produk_proses_kategori_id'] = 2; // Produksi
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::produksiId();
                                 // Update urutan dari state jika sudah ada, jika tidak gunakan posisi di array
                                 if (isset($data['urutan']) && is_numeric($data['urutan'])) {
                                     $data['urutan'] = (int) $data['urutan'];
@@ -636,12 +637,12 @@ class ProdukResource extends Resource
                         Forms\Components\Repeater::make('produkProsesAddon')
                             ->label('Proses Finishing/Addon')
                             ->relationship('produkProses', function ($query) {
-                                return $query->where('produk_proses_kategori_id', 3); // Finishing
+                                return $query->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId());
                             })
                             ->defaultItems(0)
                             ->schema([
                                 Forms\Components\Hidden::make('produk_proses_kategori_id')
-                                    ->default(2), // Finishing
+                                    ->default(fn () => ProdukProsesKategori::finishingId()),
                                 Forms\Components\Hidden::make('proses_id'),
                                 Forms\Components\Select::make('nama')
                                     ->label('Nama Addon')
@@ -649,7 +650,7 @@ class ProdukResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->options(function () {
-                                        return \App\Models\Proses::where('produk_proses_kategori_id', 3)
+                                        return \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::finishingId())
                                             ->limit(100)
                                             ->get()
                                             ->mapWithKeys(fn ($proses) => [
@@ -659,7 +660,7 @@ class ProdukResource extends Resource
                                     ->live()
                                     ->afterStateUpdated(function (Forms\Set $set, $state) {
                                         // Cari proses master dan isi harga default jika ada
-                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', 3)
+                                        $proses = \App\Models\Proses::where('produk_proses_kategori_id', ProdukProsesKategori::finishingId())
                                             ->where('nama', $state)
                                             ->first();
                                         if ($proses) {
@@ -706,7 +707,7 @@ class ProdukResource extends Resource
                                     ->createOptionUsing(function (array $data) {
                                         // Cek apakah proses dengan nama yang sama sudah ada
                                         $existingProses = \App\Models\Proses::where('nama', $data['nama'])
-                                            ->where('produk_proses_kategori_id', 3)
+                                            ->where('produk_proses_kategori_id', ProdukProsesKategori::finishingId())
                                             ->first();
                                         
                                         if ($existingProses) {
@@ -720,7 +721,7 @@ class ProdukResource extends Resource
                                         // Jika belum ada, buat baru
                                         $proses = \App\Models\Proses::create([
                                             'nama' => $data['nama'],
-                                            'produk_proses_kategori_id' => 3, // Finishing
+                                            'produk_proses_kategori_id' => ProdukProsesKategori::finishingId(),
                                             'harga_default' => $data['harga_default'] ?? null,
                                         ]);
                                         return $proses->nama;
@@ -834,11 +835,11 @@ class ProdukResource extends Resource
                             ->itemLabel(fn (array $state): ?string => $state['nama'] ?? 'Addon Baru')
                             ->helperText('Jika produk tidak memerlukan finishing/addon, kosongkan saja bagian ini.')
                             ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                $data['produk_proses_kategori_id'] = 3; // Finishing
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::finishingId();
                                 return $data;
                             })
                             ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
-                                $data['produk_proses_kategori_id'] = 3; // Finishing
+                                $data['produk_proses_kategori_id'] = ProdukProsesKategori::finishingId();
                                 return $data;
                             }),
                         ])

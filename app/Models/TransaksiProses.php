@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\TransaksiProses\StatusProsesEnum;
+use App\Models\ProdukProsesKategori;
 
 class TransaksiProses extends Model
 {
@@ -71,7 +72,7 @@ class TransaksiProses extends Model
     {
         // Sample hanya untuk proses produksi (kategori 2) yang mengurangi bahan
         return $this->produkProses 
-            && $this->produkProses->produk_proses_kategori_id == 2
+            && $this->produkProses->produk_proses_kategori_id == ProdukProsesKategori::produksiId()
             && $this->produkProses->apakah_mengurangi_bahan;
     }
 

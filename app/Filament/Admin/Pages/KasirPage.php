@@ -33,6 +33,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Concerns\InteractsWithTable;
 use App\Enums\BahanMutasi\TipeEnum as MutasiTipeEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
+use App\Models\ProdukProsesKategori;
 use App\Models\Wallet;
 use App\Jobs\SendNotaWhatsappJob;
 
@@ -684,7 +685,7 @@ class KasirPage extends Page implements HasTable, HasForms
 
                 // Get ProdukProses for this product (only production processes, not addons)
                 $produkProses = ProdukProses::where('produk_id', $produkData['produk_id'])
-                    ->where('produk_proses_kategori_id', 2) // Only Produksi category
+                    ->where('produk_proses_kategori_id', ProdukProsesKategori::produksiId()) // Only Produksi category
                     ->whereNotNull('urutan')
                     ->orderBy('urutan')
                     ->get();
