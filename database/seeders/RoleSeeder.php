@@ -36,7 +36,7 @@ class RoleSeeder extends Seeder
             ]);
 
         // TODO: Add role assignments here
-        $superAdmin->assignRole(Role::all());
+        $superAdmin->assignRole(Role::whereNotIn('name', ['customer'])->pluck('id')->toArray());
 
         // Assign all mesins to superadmin
         $superAdmin->mesins()->sync(Mesin::pluck('id')->toArray());
