@@ -12,6 +12,7 @@ use App\Http\Middleware\Authenticate;
 use App\Filament\Admin\Pages\KasirPage;
 use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationGroup;
+use App\Filament\Admin\Pages\AntrianPage;
 use App\Filament\Admin\Pages\ProduksiPage;
 use Filament\Navigation\NavigationBuilder;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
@@ -118,6 +119,7 @@ class AdminPanelProvider extends PanelProvider
                         NavigationGroup::make('')
                             ->items([
                                 ...Dashboard::getNavigationItems(),
+                                ...AntrianPage::getNavigationItems(),
                             ]),
                         NavigationGroup::make('Transaksi')
                             ->items([

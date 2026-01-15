@@ -5,6 +5,7 @@ use App\Http\Controllers\PrintNotaController;
 use App\Http\Controllers\PrintSpkController;
 use App\Http\Controllers\StokOpnamePrintController;
 use App\Http\Controllers\StokOpnameExportController;
+use App\Http\Controllers\AntrianController;
 use Illuminate\Support\Facades\Route;
 
 // Login Routes
@@ -30,4 +31,14 @@ Route::middleware('auth')->group(function () {
         ->name('stok-opname.export');
     Route::get('/export/stok-opname', [StokOpnameExportController::class, 'exportAll'])
         ->name('stok-opname.export-all');
+});
+
+// ==================== ANTRIAN ROUTES ====================
+// Public routes (no auth required)
+Route::prefix('antrian')->name('antrian.')->group(function () {
+    Route::get('/', [AntrianController::class, 'ambilTiket'])->name('ambil-tiket');
+    Route::post('/ambil', [AntrianController::class, 'prosesAmbilTiket'])->name('proses-ambil');
+    Route::get('/tiket/{antrian}', [AntrianController::class, 'showTiket'])->name('tiket');
+    Route::get('/display', [AntrianController::class, 'display'])->name('display');
+    Route::get('/display-data', [AntrianController::class, 'getDisplayData'])->name('display-data');
 });
