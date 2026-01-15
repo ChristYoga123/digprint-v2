@@ -61,6 +61,9 @@ class ManageStokOpnameItems extends Page implements HasTable
                     ->with(['bahan', 'bahan.satuanTerkecil'])
             )
             ->columns([
+                Tables\Columns\TextColumn::make('row_number')
+                    ->label('No')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('bahan.kode')
                     ->label('Kode')
                     ->searchable()
@@ -72,12 +75,17 @@ class ManageStokOpnameItems extends Page implements HasTable
                     ->wrap(),
                 Tables\Columns\TextColumn::make('stock_system')
                     ->label('Stok Sistem')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
                     ->suffix(fn (StokOpnameItem $record) => ' ' . ($record->bahan->satuanTerkecil->nama ?? '')),
-                Tables\Columns\TextInputColumn::make('stock_physical')
+                Tables\Columns\TextColumn::make('stock_physical')
                     ->label('Stok Fisik')
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
+                    ->suffix(fn (StokOpnameItem $record) => ' ' . ($record->bahan->satuanTerkecil->nama ?? '')),
+                Tables\Columns\TextInputColumn::make('stock_physical_input')
+                    ->label('Input Fisik')
                     ->type('number')
                     ->rules(['nullable', 'numeric', 'min:0'])
+                    ->getStateUsing(fn (StokOpnameItem $record) => $record->stock_physical)
                     ->updateStateUsing(function (StokOpnameItem $record, $state) {
                         $record->stock_physical = $state;
                         
@@ -94,7 +102,7 @@ class ManageStokOpnameItems extends Page implements HasTable
                     ->disabled(fn () => in_array($this->record->status, [StatusEnum::SUBMITTED, StatusEnum::APPROVED])),
                 Tables\Columns\TextColumn::make('difference')
                     ->label('Selisih')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
                     ->color(fn (StokOpnameItem $record) => match (true) {
                         $record->difference === null => 'gray',
                         $record->difference > 0 => 'success',
@@ -108,6 +116,45 @@ class ManageStokOpnameItems extends Page implements HasTable
                         default => 'heroicon-o-minus',
                     })
                     ->suffix(fn (StokOpnameItem $record) => ' ' . ($record->bahan->satuanTerkecil->nama ?? '')),
+                Tables\Columns\TextColumn::make('harga_terakhir')
+                    ->label('Harga Terakhir')
+                    ->getStateUsing(function (StokOpnameItem $record) {
+                        $lastBatch = BahanStokBatch::where('bahan_id', $record->bahan_id)
+                            ->where('harga_satuan_terkecil', '>', 0)
+                            ->orderBy('tanggal_masuk', 'desc')
+                            ->first();
+                        
+                        return $lastBatch?->harga_satuan_terkecil ?? 0;
+                    })
+                    ->money('IDR'),
+                Tables\Columns\TextColumn::make('nominal_selisih')
+                    ->label('Nominal Selisih')
+                    ->getStateUsing(function (StokOpnameItem $record) {
+                        if ($record->difference === null || $record->difference == 0) {
+                            return null;
+                        }
+                        
+                        // Get harga terakhir dari batch terbaru
+                        $lastBatch = BahanStokBatch::where('bahan_id', $record->bahan_id)
+                            ->where('harga_satuan_terkecil', '>', 0)
+                            ->orderBy('tanggal_masuk', 'desc')
+                            ->first();
+                        
+                        if (!$lastBatch) {
+                            return null;
+                        }
+                        
+                        $nominal = abs($record->difference) * $lastBatch->harga_satuan_terkecil;
+                        return $nominal;
+                    })
+                    ->money('IDR')
+                    ->color(fn (StokOpnameItem $record) => match (true) {
+                        $record->difference === null || $record->difference == 0 => 'gray',
+                        $record->difference > 0 => 'success',
+                        $record->difference < 0 => 'danger',
+                        default => 'gray',
+                    })
+                    ->prefix(fn (StokOpnameItem $record) => $record->difference < 0 ? '-' : ($record->difference > 0 ? '+' : '')),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge(),

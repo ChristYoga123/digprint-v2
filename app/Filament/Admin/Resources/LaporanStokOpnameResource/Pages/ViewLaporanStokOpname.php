@@ -6,6 +6,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use App\Models\StokOpname;
 use App\Models\StokOpnameItem;
+use App\Models\BahanStokBatch;
 use Filament\Resources\Pages\Page;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -49,6 +50,9 @@ class ViewLaporanStokOpname extends Page implements HasTable
                     ->with(['bahan', 'bahan.satuanTerkecil', 'approvedBy'])
             )
             ->columns([
+                Tables\Columns\TextColumn::make('row_number')
+                    ->label('No')
+                    ->rowIndex(),
                 Tables\Columns\TextColumn::make('bahan.kode')
                     ->label('Kode')
                     ->searchable()
@@ -62,15 +66,15 @@ class ViewLaporanStokOpname extends Page implements HasTable
                     ->label('Satuan'),
                 Tables\Columns\TextColumn::make('stock_system')
                     ->label('Stok Sistem')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
                     ->alignRight(),
                 Tables\Columns\TextColumn::make('stock_physical')
                     ->label('Stok Fisik')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
                     ->alignRight(),
                 Tables\Columns\TextColumn::make('difference')
                     ->label('Selisih')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '-')
                     ->color(fn ($state) => match (true) {
                         $state === null => 'gray',
                         $state > 0 => 'success',
@@ -83,6 +87,45 @@ class ViewLaporanStokOpname extends Page implements HasTable
                         $state < 0 => 'heroicon-o-arrow-trending-down',
                         default => 'heroicon-o-minus',
                     })
+                    ->alignRight(),
+                Tables\Columns\TextColumn::make('harga_terakhir')
+                    ->label('Harga Terakhir')
+                    ->getStateUsing(function (StokOpnameItem $record) {
+                        $lastBatch = BahanStokBatch::where('bahan_id', $record->bahan_id)
+                            ->where('harga_satuan_terkecil', '>', 0)
+                            ->orderBy('tanggal_masuk', 'desc')
+                            ->first();
+                        
+                        return $lastBatch?->harga_satuan_terkecil ?? 0;
+                    })
+                    ->money('IDR')
+                    ->alignRight(),
+                Tables\Columns\TextColumn::make('nominal_selisih')
+                    ->label('Nominal Selisih')
+                    ->getStateUsing(function (StokOpnameItem $record) {
+                        if ($record->difference === null || $record->difference == 0) {
+                            return null;
+                        }
+                        
+                        $lastBatch = BahanStokBatch::where('bahan_id', $record->bahan_id)
+                            ->where('harga_satuan_terkecil', '>', 0)
+                            ->orderBy('tanggal_masuk', 'desc')
+                            ->first();
+                        
+                        if (!$lastBatch) {
+                            return null;
+                        }
+                        
+                        return abs($record->difference) * $lastBatch->harga_satuan_terkecil;
+                    })
+                    ->money('IDR')
+                    ->color(fn (StokOpnameItem $record) => match (true) {
+                        $record->difference === null || $record->difference == 0 => 'gray',
+                        $record->difference > 0 => 'success',
+                        $record->difference < 0 => 'danger',
+                        default => 'gray',
+                    })
+                    ->prefix(fn (StokOpnameItem $record) => $record->difference < 0 ? '-' : ($record->difference > 0 ? '+' : ''))
                     ->alignRight(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

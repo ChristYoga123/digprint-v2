@@ -76,7 +76,19 @@ class SendNotaWhatsappJob implements ShouldQueue
             if ($produk->panjang && $produk->lebar) {
                 $ukuran = " ({$produk->panjang}x{$produk->lebar} cm)";
             }
-            $items[] = "• {$produk->produk->nama}{$ukuran} x{$produk->jumlah}";
+            $itemLine = "• {$produk->produk->nama}{$ukuran} x{$produk->jumlah}";
+            
+            // Tambahkan addon jika ada
+            if ($produk->addons && is_array($produk->addons) && !empty($produk->addons)) {
+                $addonNames = \App\Models\ProdukProses::whereIn('id', $produk->addons)
+                    ->pluck('nama')
+                    ->toArray();
+                if (!empty($addonNames)) {
+                    $itemLine .= "\n  ↳ Addon: " . implode(', ', $addonNames);
+                }
+            }
+            
+            $items[] = $itemLine;
         }
         $itemList = implode("\n", $items);
 

@@ -117,18 +117,17 @@ class LaporanStokOpnameResource extends Resource implements HasShieldPermissions
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_positive')
                     ->label('Stok Lebih (+)')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? '+' . (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '0')
                     ->color('success')
-                    ->default(0)
-                    ->prefix('+'),
+                    ->default(0),
                 Tables\Columns\TextColumn::make('total_negative')
                     ->label('Stok Kurang (-)')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '0')
                     ->color('danger')
                     ->default(0),
                 Tables\Columns\TextColumn::make('items_sum_difference')
                     ->label('Selisih Bersih')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => $state !== null ? (floor($state) == $state ? number_format($state, 0, ',', '.') : number_format($state, 2, ',', '.')) : '0')
                     ->color(fn ($state) => $state >= 0 ? 'success' : 'danger')
                     ->default(0),
                 Tables\Columns\TextColumn::make('approvedBy.name')
