@@ -403,29 +403,20 @@
         let isFirstPoll = true; // Flag untuk skip speech pada polling pertama
 
         function enableAudio() {
-            // Test speech synthesis dengan suara kosong (untuk unlock)
-            const u = new SpeechSynthesisUtterance('');
-            u.volume = 0;
+            console.log('Enable audio clicked');
 
-            u.onend = () => {
-                console.log('Audio unlocked successfully');
-                audioEnabled = true;
-                document.getElementById('audioOverlay').classList.add('hidden');
-            };
+            // Langsung set audioEnabled = true dan sembunyikan overlay
+            audioEnabled = true;
+            document.getElementById('audioOverlay').classList.add('hidden');
 
-            u.onerror = (e) => {
-                console.error('Audio unlock failed:', e.error);
-                // Tetap sembunyikan overlay, tapi audio mungkin tetap tidak berfungsi
-                audioEnabled = true;
-                document.getElementById('audioOverlay').classList.add('hidden');
-            };
-
+            // Coba unlock speech synthesis dengan suara kosong
             try {
+                const u = new SpeechSynthesisUtterance('');
+                u.volume = 0;
                 speechSynthesis.speak(u);
+                console.log('Speech synthesis unlocked');
             } catch (err) {
-                console.error('Speech synthesis not available:', err);
-                audioEnabled = true;
-                document.getElementById('audioOverlay').classList.add('hidden');
+                console.warn('Speech synthesis unlock failed:', err);
             }
         }
 
