@@ -397,19 +397,36 @@
         setInterval(updateClock, 1000);
 
         // ============ AUDIO ============
-        let audioEnabled = localStorage.getItem('audioEnabled') === 'true';
-        if (audioEnabled) {
-            document.getElementById('audioOverlay').classList.add('hidden');
-        }
+        // PENTING: Browser membutuhkan interaksi user sebelum audio bisa diputar.
+        // Jadi overlay SELALU muncul saat halaman pertama kali dibuka.
+        let audioEnabled = false; // Selalu false sampai user klik
+        let isFirstPoll = true; // Flag untuk skip speech pada polling pertama
 
         function enableAudio() {
+            // Test speech synthesis dengan suara kosong (untuk unlock)
             const u = new SpeechSynthesisUtterance('');
             u.volume = 0;
-            speechSynthesis.speak(u);
 
-            audioEnabled = true;
-            localStorage.setItem('audioEnabled', 'true');
-            document.getElementById('audioOverlay').classList.add('hidden');
+            u.onend = () => {
+                console.log('Audio unlocked successfully');
+                audioEnabled = true;
+                document.getElementById('audioOverlay').classList.add('hidden');
+            };
+
+            u.onerror = (e) => {
+                console.error('Audio unlock failed:', e.error);
+                // Tetap sembunyikan overlay, tapi audio mungkin tetap tidak berfungsi
+                audioEnabled = true;
+                document.getElementById('audioOverlay').classList.add('hidden');
+            };
+
+            try {
+                speechSynthesis.speak(u);
+            } catch (err) {
+                console.error('Speech synthesis not available:', err);
+                audioEnabled = true;
+                document.getElementById('audioOverlay').classList.add('hidden');
+            }
         }
 
         // ============ VOICE QUEUE ============
@@ -428,7 +445,7 @@
 
         function speak(nomor, loket) {
             if (!audioEnabled) {
-                console.log('Audio not enabled');
+                console.log('Audio not enabled, skipping speech');
                 return;
             }
 
@@ -454,33 +471,22 @@
             u.onend = () => {
                 console.log('Speech ended');
                 isSpeaking = false;
-                // Process next in queue after delay
                 setTimeout(processVoiceQueue, 500);
             };
             u.onerror = (e) => {
                 console.error('Speech error:', e.error);
-
-                // If browser blocked audio, show overlay again
-                if (e.error === 'not-allowed') {
-                    document.getElementById('audioOverlay').classList.remove('hidden');
-                    audioEnabled = false;
-                }
-
                 isSpeaking = false;
                 setTimeout(processVoiceQueue, 500);
             };
 
             const voices = speechSynthesis.getVoices();
-            const id = voices.find(v => v.lang.includes('id'));
-            if (id) u.voice = id;
+            const idVoice = voices.find(v => v.lang.includes('id'));
+            if (idVoice) u.voice = idVoice;
 
             try {
                 speechSynthesis.speak(u);
             } catch (err) {
                 console.error('Synthesis error:', err);
-                // Fallback for immediate errors
-                document.getElementById('audioOverlay').classList.remove('hidden');
-                audioEnabled = false;
                 isSpeaking = false;
             }
         }
@@ -492,9 +498,6 @@
         // ============ UI UPDATE ============
         function updateCalledGrid(antrians) {
             const grid = document.getElementById('calledGrid');
-
-            // Check for new calls (comparison logic)
-            // Just updated UI for now, logic for speech is below
 
             if (!antrians || antrians.length === 0) {
                 grid.innerHTML =
@@ -531,8 +534,7 @@
         }
 
         // ============ POLLING SYSTEM ============
-        let lastCalledId = null; // To track if we need to speak
-        let lastCalledTime = null;
+        let lastCalledId = null;
 
         async function pollData() {
             try {
@@ -543,17 +545,28 @@
                 updateCalledGrid(data.calledAntrians);
                 updateWaitingList(data.waitingAntrians);
 
-                // Check if there is a NEW called antrian at the top
+                // Check if there is a called antrian at the top
                 if (data.calledAntrians && data.calledAntrians.length > 0) {
                     const topCall = data.calledAntrians[0];
-                    // Identification key: nomor_antrian + called_at
                     const currentKey = `${topCall.nomor_antrian}-${topCall.called_at}`;
 
-                    if (lastCalledId !== currentKey) {
+                    // Pada polling pertama, hanya inisialisasi lastCalledId tanpa berbicara
+                    if (isFirstPoll) {
                         lastCalledId = currentKey;
-                        // Speak it!
+                        isFirstPoll = false;
+                        console.log('First poll - initialized lastCalledId:', currentKey);
+                    } else if (lastCalledId !== currentKey) {
+                        // Ada panggilan BARU
+                        lastCalledId = currentKey;
+                        console.log('New call detected:', currentKey);
                         speak(topCall.nomor_antrian, topCall.deskprint_number);
                     }
+                } else {
+                    // Tidak ada yang dipanggil
+                    if (isFirstPoll) {
+                        isFirstPoll = false;
+                    }
+                    lastCalledId = null;
                 }
 
                 // Connection status
