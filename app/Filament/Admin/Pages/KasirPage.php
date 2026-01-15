@@ -34,6 +34,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use App\Enums\BahanMutasi\TipeEnum as MutasiTipeEnum;
 use App\Enums\BahanMutasiFaktur\StatusPembayaranEnum;
 use App\Models\ProdukProsesKategori;
+use App\Models\Proses;
 use App\Models\Wallet;
 use App\Jobs\SendNotaWhatsappJob;
 
@@ -67,7 +68,7 @@ class KasirPage extends Page implements HasTable, HasForms
     public array $cartItems = [];
     public array $itemDiscounts = [];
     public ?string $jenisDiskon = null;
-    public ?int $totalDiskonInvoice = 0;
+    public ?string $totalDiskonInvoice = '0';
     public ?string $statusPembayaran = null;
     public ?string $metodePembayaran = null;
     public ?string $jumlahBayar = '0';
@@ -283,6 +284,34 @@ class KasirPage extends Page implements HasTable, HasForms
 
         $this->cartItems = [];
         foreach ($kalkulasi->transaksiKalkulasiProduks as $item) {
+            // Get design info if exists
+            $designNama = null;
+            $designHarga = 0;
+            if ($item->design_id) {
+                $design = Proses::find($item->design_id);
+                $designNama = $design?->nama;
+                $designHarga = (int) ($design?->harga_default ?? 0);
+            }
+            
+            // Get addon info if exists
+            $addonDetails = [];
+            $totalAddonHarga = 0;
+            if ($item->addons && is_array($item->addons) && !empty($item->addons)) {
+                $addons = ProdukProses::whereIn('id', $item->addons)->get();
+                foreach ($addons as $addon) {
+                    $addonHarga = (int) ($addon->harga ?? 0);
+                    $addonDetails[] = [
+                        'nama' => $addon->nama,
+                        'harga' => $addonHarga,
+                        'total' => $addonHarga * $item->jumlah,
+                    ];
+                    $totalAddonHarga += $addonHarga * $item->jumlah;
+                }
+            }
+            
+            // Calculate product base price (total - design - addons)
+            $hargaProduk = $item->total_harga_produk - $designHarga - $totalAddonHarga;
+            
             $this->cartItems[] = [
                 'id' => $item->id,
                 'produk_id' => $item->produk_id,
@@ -291,9 +320,14 @@ class KasirPage extends Page implements HasTable, HasForms
                 'jumlah' => $item->jumlah,
                 'panjang' => $item->panjang,
                 'lebar' => $item->lebar,
+                'harga_produk' => max(0, $hargaProduk), // Base product price
                 'design_id' => $item->design_id,
+                'design_nama' => $designNama,
+                'design_harga' => $designHarga,
                 'link_design' => $item->link_design ?? null,
                 'addons' => $item->addons ?? [],
+                'addon_details' => $addonDetails, // Array of {nama, harga, total}
+                'total_addon_harga' => $totalAddonHarga,
                 'proses_perlu_sample_approval' => $item->proses_perlu_sample_approval ?? [],
                 'total_harga_produk' => $item->total_harga_produk,
                 'keterangan' => $item->keterangan ?? null,
@@ -301,7 +335,7 @@ class KasirPage extends Page implements HasTable, HasForms
         }
 
         // Reset form
-        $this->totalDiskonInvoice = 0;
+        $this->totalDiskonInvoice = '0';
         $this->itemDiscounts = [];
         $this->statusPembayaran = null;
         $this->metodePembayaran = null;
@@ -332,7 +366,7 @@ class KasirPage extends Page implements HasTable, HasForms
         $this->cartItems = [];
         $this->itemDiscounts = [];
         $this->jenisDiskon = null;
-        $this->totalDiskonInvoice = 0;
+        $this->totalDiskonInvoice = '0';
         $this->statusPembayaran = null;
         $this->metodePembayaran = null;
         $this->jumlahBayar = '0';
@@ -348,7 +382,85 @@ class KasirPage extends Page implements HasTable, HasForms
 
     public function updateItemDiscount($index, $discount): void
     {
-        $this->itemDiscounts[$index] = (int) $discount;
+        // Parse discount yang mungkin mengandung separator ribuan
+        $this->itemDiscounts[$index] = (int) str_replace(['.', ','], '', (string) $discount);
+    }
+
+    /**
+     * Select pembayaran LUNAS
+     */
+    public function selectPembayaranLunas(): void
+    {
+        $this->statusPembayaran = StatusPembayaranEnum::LUNAS->value;
+        $this->jumlahBayar = number_format($this->getCartTotalAfterDiscount(), 0, '', '.');
+        $this->tanggalPembayaran = now()->format('Y-m-d');
+        $this->tanggalJatuhTempo = null;
+    }
+
+    /**
+     * Select pembayaran TOP (Term of Payment)
+     */
+    public function selectPembayaranTOP(): void
+    {
+        $this->statusPembayaran = StatusPembayaranEnum::TERM_OF_PAYMENT->value;
+        $this->jumlahBayar = '0';
+        $this->tanggalJatuhTempo = now()->format('Y-m-d');
+        $this->tanggalPembayaran = null;
+    }
+
+    /**
+     * Validate item discount - called on change
+     */
+    public function validateItemDiscount(int $index, int $maxPrice): void
+    {
+        if (!isset($this->itemDiscounts[$index])) {
+            return;
+        }
+        
+        $diskon = (int) str_replace(['.', ','], '', (string) $this->itemDiscounts[$index]);
+        
+        if ($diskon > $maxPrice) {
+            // Reset to max price
+            $this->itemDiscounts[$index] = (string) $maxPrice;
+            
+            $produkNama = $this->cartItems[$index]['produk_nama'] ?? 'Item';
+            
+            Notification::make()
+                ->title('Diskon melebihi harga')
+                ->body("Diskon untuk '{$produkNama}' tidak boleh melebihi harga produk (" . formatRupiah($maxPrice) . "). Diskon direset ke nilai maksimal.")
+                ->warning()
+                ->duration(5000)
+                ->send();
+        }
+    }
+
+    /**
+     * Validate invoice discount - called on change
+     */
+    public function validateInvoiceDiscount(): void
+    {
+        $cartTotal = $this->getCartTotal();
+        
+        // Hitung total diskon item
+        $totalDiskonItem = 0;
+        foreach ($this->itemDiscounts as $discount) {
+            $totalDiskonItem += (int) str_replace(['.', ','], '', (string) $discount);
+        }
+        
+        $maxInvoiceDiscount = $cartTotal - $totalDiskonItem;
+        $invoiceDiskon = !empty($this->totalDiskonInvoice) ? (int) str_replace(['.', ','], '', (string) $this->totalDiskonInvoice) : 0;
+        
+        if ($invoiceDiskon > $maxInvoiceDiscount) {
+            // Reset to max
+            $this->totalDiskonInvoice = (string) max(0, $maxInvoiceDiscount);
+            
+            Notification::make()
+                ->title('Diskon melebihi batas')
+                ->body("Total diskon tidak boleh melebihi total harga. Diskon invoice direset ke " . formatRupiah(max(0, $maxInvoiceDiscount)) . ".")
+                ->warning()
+                ->duration(5000)
+                ->send();
+        }
     }
 
     public function checkout(): void
@@ -366,6 +478,42 @@ class KasirPage extends Page implements HasTable, HasForms
             Notification::make()
                 ->title('Status pembayaran harus diisi')
                 ->warning()
+                ->send();
+            return;
+        }
+
+        // === VALIDASI DISKON ===
+        // Validasi diskon per item tidak boleh melebihi harga item
+        foreach ($this->cartItems as $index => $item) {
+            $diskonItem = 0;
+            if (isset($this->itemDiscounts[$index])) {
+                $diskonItem = (int) str_replace(['.', ','], '', (string) $this->itemDiscounts[$index]);
+            }
+            
+            if ($diskonItem > $item['total_harga_produk']) {
+                Notification::make()
+                    ->title('Diskon item melebihi harga')
+                    ->body("Diskon untuk '{$item['produk_nama']}' (Rp " . number_format($diskonItem, 0, ',', '.') . ") melebihi harga produk (Rp " . number_format($item['total_harga_produk'], 0, ',', '.') . ")")
+                    ->danger()
+                    ->send();
+                return;
+            }
+        }
+        
+        // Validasi total diskon tidak boleh melebihi total harga
+        $cartTotal = $this->getCartTotal();
+        $totalDiskonItem = 0;
+        foreach ($this->itemDiscounts as $discount) {
+            $totalDiskonItem += (int) str_replace(['.', ','], '', (string) $discount);
+        }
+        $totalDiskonInvoiceParsed = !empty($this->totalDiskonInvoice) ? (int) str_replace(['.', ','], '', (string) $this->totalDiskonInvoice) : 0;
+        $totalDiskonAll = $totalDiskonItem + $totalDiskonInvoiceParsed;
+        
+        if ($totalDiskonAll > $cartTotal) {
+            Notification::make()
+                ->title('Total diskon melebihi total harga')
+                ->body("Total diskon (Rp " . number_format($totalDiskonAll, 0, ',', '.') . ") melebihi total harga (Rp " . number_format($cartTotal, 0, ',', '.') . ")")
+                ->danger()
                 ->send();
             return;
         }
@@ -418,16 +566,17 @@ class KasirPage extends Page implements HasTable, HasForms
             // Calculate subtotal SEBELUM diskon
             $subtotalSebelumDiskon = 0;
             $totalDiskonItem = 0;
-            $totalDiskonInvoice = (int) ($this->totalDiskonInvoice ?? 0);
+            // Parse diskon invoice (remove separator: titik dan koma)
+            $totalDiskonInvoice = !empty($this->totalDiskonInvoice) ? (int) str_replace(['.', ','], '', (string) $this->totalDiskonInvoice) : 0;
             $transaksiProduks = [];
 
             foreach ($this->cartItems as $index => $item) {
                 $hargaSebelumDiskon = $item['total_harga_produk'];
                 $diskonProduk = 0;
 
-                // Apply item discount (jika ada)
+                // Apply item discount (jika ada) - parse thousand separator
                 if (isset($this->itemDiscounts[$index])) {
-                    $diskonProduk = (int) $this->itemDiscounts[$index];
+                    $diskonProduk = (int) str_replace(['.', ','], '', (string) $this->itemDiscounts[$index]);
                     $totalDiskonItem += $diskonProduk;
                 }
 
@@ -796,14 +945,14 @@ class KasirPage extends Page implements HasTable, HasForms
     {
         $total = $this->getCartTotal();
 
-        // Hitung total diskon per item
+        // Hitung total diskon per item (parse thousand separator)
         $totalDiskonItem = 0;
         foreach ($this->itemDiscounts as $discount) {
-            $totalDiskonItem += (int) $discount;
+            $totalDiskonItem += (int) str_replace(['.', ','], '', (string) $discount);
         }
 
-        // Hitung total diskon invoice
-        $totalDiskonInvoice = (int) ($this->totalDiskonInvoice ?? 0);
+        // Hitung total diskon invoice (parse thousand separator)
+        $totalDiskonInvoice = !empty($this->totalDiskonInvoice) ? (int) str_replace(['.', ','], '', (string) $this->totalDiskonInvoice) : 0;
 
         // Total diskon = diskon per item + diskon invoice
         $totalDiskon = $totalDiskonItem + $totalDiskonInvoice;

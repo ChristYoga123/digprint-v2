@@ -8,11 +8,11 @@ use Filament\Widgets;
 use Filament\PanelProvider;
 use Filament\Pages\Dashboard;
 use Filament\Support\Colors\Color;
+use App\Http\Middleware\Authenticate;
 use App\Filament\Admin\Pages\KasirPage;
 use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationGroup;
 use App\Filament\Admin\Pages\ProduksiPage;
-use App\Http\Middleware\Authenticate;
 use Filament\Navigation\NavigationBuilder;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
 use App\Filament\Admin\Pages\FinishingPage;
@@ -44,6 +44,7 @@ use App\Filament\Admin\Resources\PraProduksiResource;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use FilipFonal\FilamentLogManager\FilamentLogManager;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use App\Filament\Admin\Resources\MasterDesignResource;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use App\Filament\Admin\Resources\PengajuanDiskonResource;
@@ -152,6 +153,7 @@ class AdminPanelProvider extends PanelProvider
                         NavigationGroup::make('Produksi')
                             ->items([
                                 ...MesinResource::getNavigationItems(),
+                                ...MasterDesignResource::getNavigationItems(),
                                 ...ProdukResource::getNavigationItems(),
                                 ...KloterResource::getNavigationItems(),
                                 ...PraProduksiResource::getNavigationItems(),

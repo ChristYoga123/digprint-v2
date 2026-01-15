@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\DeskprintResource;
 use App\Models\Customer;
 use App\Models\ProdukHarga;
 use App\Models\ProdukProses;
+use App\Models\Proses;
 use App\Models\KaryawanPekerjaan;
 use App\Models\TransaksiKalkulasi;
 use App\Enums\KaryawanPekerjaan\TipeEnum;
@@ -99,13 +100,11 @@ class ManageDeskprints extends ManageRecords
             // Hitung total produk
             $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
 
-            // Tambah harga design (single value, bukan array)
+            // Tambah harga design (from global Proses table)
             if ($produk->design_id) {
-                $designProses = ProdukProses::where('id', $produk->design_id)
-                    ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
-                    ->first();
-                if ($designProses) {
-                    $totalProduk += (float) ($designProses->harga ?? 0);
+                $design = Proses::find($produk->design_id);
+                if ($design) {
+                    $totalProduk += (float) ($design->harga_default ?? 0);
                 }
             }
 
@@ -203,13 +202,11 @@ class ManageDeskprints extends ManageRecords
             // Hitung total produk
             $totalProduk = $hargaSatuan * $jumlahFloat * $panjang * $lebar;
 
-            // Tambah harga design (single value, bukan array)
+            // Tambah harga design (from global Proses table)
             if (isset($produk['design_id']) && !empty($produk['design_id']) && $produk['design_id'] !== 'none') {
-                $designProses = ProdukProses::where('id', $produk['design_id'])
-                    ->where('produk_proses_kategori_id', ProdukProsesKategori::praProduksiId()) // Design
-                    ->first();
-                if ($designProses) {
-                    $totalProduk += (float) ($designProses->harga ?? 0);
+                $design = Proses::find($produk['design_id']);
+                if ($design) {
+                    $totalProduk += (float) ($design->harga_default ?? 0);
                 }
             }
 
