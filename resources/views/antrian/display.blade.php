@@ -452,6 +452,9 @@
             isSpeaking = true;
             console.log('Speaking:', nomor, loket);
 
+            // Cancel any pending speech first
+            speechSynthesis.cancel();
+
             const text = `Nomor antrian, ${String(nomor).padStart(3, '0')}, silakan menuju ke, loket ${loket}`;
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'id-ID';
@@ -470,21 +473,45 @@
                 setTimeout(processVoiceQueue, 500);
             };
 
-            const voices = speechSynthesis.getVoices();
+            // Get voices
+            let voices = speechSynthesis.getVoices();
+            console.log('Available voices:', voices.length);
+
+            // Try to find Indonesian voice, fallback to any available
             const idVoice = voices.find(v => v.lang.includes('id'));
-            if (idVoice) u.voice = idVoice;
+            if (idVoice) {
+                u.voice = idVoice;
+                console.log('Using Indonesian voice:', idVoice.name);
+            } else if (voices.length > 0) {
+                // Use first available voice as fallback
+                u.voice = voices[0];
+                console.log('Using fallback voice:', voices[0].name);
+            }
 
             try {
-                speechSynthesis.speak(u);
+                // Small delay to ensure speech synthesis is ready
+                setTimeout(() => {
+                    speechSynthesis.speak(u);
+                    console.log('Speech synthesis speak() called');
+                }, 100);
             } catch (err) {
                 console.error('Synthesis error:', err);
                 isSpeaking = false;
             }
         }
 
-        // Preload voices
-        speechSynthesis.getVoices();
-        speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+        // Preload voices - important for speech to work
+        let voicesLoaded = false;
+
+        function loadVoices() {
+            const voices = speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                voicesLoaded = true;
+                console.log('Voices loaded:', voices.length);
+            }
+        }
+        loadVoices();
+        speechSynthesis.onvoiceschanged = loadVoices;
 
         // ============ UI UPDATE ============
         function updateCalledGrid(antrians) {
