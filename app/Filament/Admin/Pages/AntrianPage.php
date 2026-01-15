@@ -4,8 +4,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Models\Antrian;
 use App\Enums\Antrian\StatusAntrianEnum;
-use App\Events\AntrianDipanggil;
-use App\Events\AntrianUpdated;
+
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
