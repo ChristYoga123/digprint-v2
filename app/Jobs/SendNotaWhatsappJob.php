@@ -102,6 +102,8 @@ class SendNotaWhatsappJob implements ShouldQueue
         $message .= "━━━━━━━━━━━━━━━━━━━━\n";
         $message .= "*Invoice:* {$transaksi->kode}\n";
         $message .= "*Customer:* {$transaksi->customer->nama}\n";
+        $message .= "*Kasir:* " . ($transaksi->pencatatanKeuangans->first()->user->name ?? '-') . "\n";
+        $message .= "*Deskprint:* " . ($transaksi->createdBy->name ?? '-') . "\n";
         $message .= "*Tanggal:* " . $transaksi->created_at->format('d/m/Y H:i') . "\n";
         $message .= "━━━━━━━━━━━━━━━━━━━━\n\n";
 
